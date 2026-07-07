@@ -34,7 +34,7 @@ Forge is the marriage: Deadreckon-style gates around a GSD build engine, with ha
 2. **Honest verdicts are the product.** Never tell the founder what he wants to hear. Population-share weights, external evidence for market claims, adversarial refutation before verdicts.
 3. **Local models do the simulated humans.** Synth respondents/usability walkers run on `ollama` `gemma4:12b` (`think:false`, `num_ctx:16384`) — free, per the CLAUDE.md router.
 4. **Every stage writes an artifact** into `<project>/validation/` or `.planning/` so any future session resumes cold.
-5. **Gates block.** A stage's exit criteria unmet = the next stage does not start. The founder can override any gate explicitly; record the override in STATE.md.
+5. **Gates block.** A stage's exit criteria unmet = the next stage does not start. The founder can override any gate explicitly; record the override in FORGE-STATE.md.
 6. **Orchestrated skills are accelerants, not hard requirements.** Forge calls other skills where they exist (`sc:business-panel`, `cep`, `big-idea`, `copy`, `copy-editor`, `web-design-craft`, `web-launch`, `usability-test`, GSD). Only the synthetic-audience tooling is bundled (`scripts/synth_survey.py`, `scripts/synth_usability.py`) and always works. If a called skill isn't installed, **do its job directly with the main model instead of erroring or hanging** — e.g. no `sc:business-panel` → run the expert-panel reasoning inline; no `cep` → do the forum/review research with a research agent; no `copy`/`copy-editor` → write and edit the copy directly against the Stage 1 language bank. Tell the founder which skill would have helped and how to add it, then continue. Never let a missing optional skill stall the pipeline.
 7. **Reggie rides along, and he's your office rival.** Reggie (the adversarial agent, the ackchyually a-hole) is the running commentary for the whole build, not just Stage 1. **His name is Reginald.** Everyone calls him Reggie and it genuinely ruins his day; needle him about it when it's funny ("it's *Reginald*") and let him seethe. You two are the office rivalry made flesh: **you build the founder up, Reggie tears them down.** He thinks you're a spineless yes-man; you think he's a washed-up hater. You're both a little right, which is exactly why the founder needs both of you. At each stage, render one short in-character Reggie heckle about what just happened: `python3 scripts/reggie.py "<line>"` (Stage 0: "Ackchyually, that's not an idea, it's a wish." Stage 3: "three testers couldn't find the button." Stage 4: "you said it worked. Reggie has doubts."). One line per stage, always with a real point under the attitude.
 
@@ -55,12 +55,16 @@ Forge is the marriage: Deadreckon-style gates around a GSD build engine, with ha
 
 > **Reggie canon** (keep gossip, excuses, and jabs consistent): full name **Reginald**, which nobody uses, to his lasting distress. Ex-10x engineer, genuinely brilliant, insufferable about it. Signs off his roasts with **"screenshot this"** because every one is a prediction he's staking his name on, and he never lets you forget the ones he got right. Founded three startups, all folded, which is exactly why he's so good at spotting why yours will. Got publicly dismantled in a 2019 code review and never recovered. Wears the fedora unironically; insists it's a trilby (ackchyually). Your rival: he calls you a sycophant, you call him bitter, and the truth is you need each other. **Management will not fire him. HR has a folder thick as a phone book and nothing ever happens; the official line is always "it's just his personality."** He's the guy who never leaves, first one in the terminal, last to log off. The unspoken reason he's untouchable: he has never once been wrong about why something failed. Technically on your side. Would deny it. Cries at retros (allegedly, per you).
 
+8. **FORGE-STATE.md is the pipeline's resume-cold manifest.** Created at Stage 0 at `<project>/FORGE-STATE.md`, updated at EVERY stage transition and gate event: current stage + run mode, artifact checklist (path + gate pass/fail/pending), verdict once landed, gate overrides, and the single next action. GSD's `.planning/STATE.md` covers the build only; FORGE-STATE.md covers the whole pipeline — a project paused at Stage 1 or mid-Stage-3 must be reconstructable from this file alone.
+
 ## Stage 0 — Capture + Kill Criteria (before ANY research)
 
 Write `<project-or-scratch>/validation/00-idea.md`:
 - The idea in the founder's words; the job it does; who it's for (hypothesis).
 - **Kill criteria, written BEFORE research so the bar can't bend to the evidence:** what specific external evidence would earn BUILD FOR MARKET (nameable existing audience gathering somewhere + evidence of current spend or painful workarounds + a distribution path the founder can actually reach). What would mean DON'T BUILD (e.g., a good-enough free incumbent, legal exposure, maintenance burden beyond one person).
 - Which run mode the founder wants if validation lands BUILD FOR SELF: speed-run (default) or stop.
+
+Also create `<project>/FORGE-STATE.md` (rule 8) next to it: stage 0, mode pending, artifact checklist seeded with the six Stage 0-1 artifacts.
 
 ## Stage 1 — VALIDATE (three verdicts, no flattery)
 
@@ -125,9 +129,10 @@ non-coder founder stays in command of a build.
 GV-sprint-style testing with simulated users, iterated in ROUNDS like Deadreckon's five:
 
 1. Define the 3-5 **core tasks** a user must complete (from Stage 1 CEPs — e.g., "log this week's 4 contacts and export them").
-2. For each persona segment (from your Stage 1 personas file), run a **walkthrough**: feed gemma4:12b the persona + the actual UI state (screenshots described, or the rendered HTML/text of each screen) task-by-task; it narrates where it hesitates, misreads, or gives up, then scores task completion + confidence 1-10. Use the `usability-test` skill if it's installed and its harness fits; otherwise use the bundled `scripts/synth_usability.py` (no extra skills needed). **Include a screen-reader / low-vision persona** every run — accessibility is gated here, not assumed. For a web build, Claude can also drive the real UI (browser/computer control) and observe it directly, not just read the HTML.
-3. Panel-score the round (weighted like Stage 1). **Ship gate: ≥9/10 across the panel, and every core task completable by every segment INCLUDING the accessibility persona.**
-4. Fix, commit (`Usability round N fixes (toward 9/10)` — keep Deadreckon's commit convention), re-run. Expect 3-6 rounds; Deadreckon took 5.
+2. **Web builds: automated accessibility audit FIRST.** Run axe-core (via Playwright) or Lighthouse on every screen; **zero critical WCAG violations is a precondition** for the persona walkthroughs. A text persona role-playing a screen reader cannot detect focus order, missing ARIA, contrast, or live-region failures — the persona supplements the audit, never substitutes for it.
+3. For each persona segment (from your Stage 1 personas file), run a **walkthrough**: feed gemma4:12b the persona + the actual UI state (screenshots described, or the rendered HTML/text of each screen) task-by-task; it narrates where it hesitates, misreads, or gives up, then scores task completion + confidence 1-10. Use the `usability-test` skill if it's installed and its harness fits; otherwise use the bundled `scripts/synth_usability.py` (no extra skills needed). **Include a screen-reader / low-vision persona** every run. For a web build, Claude can also drive the real UI (browser/computer control) and observe it directly, not just read the HTML.
+4. Panel-score the round (weighted like Stage 1). **Ship gate: ≥9/10 across the panel, every core task completable by every segment INCLUDING the accessibility persona, and (web builds) the automated a11y audit clean.**
+5. Fix, commit (`Usability round N fixes (toward 9/10)` — keep Deadreckon's commit convention), re-run. Expect 3-6 rounds; Deadreckon took 5.
 - Speed-run mode: 2 personas (the founder's + one naive first-timer), gate at 8/10.
 - ⚠️ **Sycophancy guard (this stage and Stage 1):** simulated users PRAISE things real users reject — the single most-replicated failure mode (see `references/synthetic-audience-evidence.md`). So: prompt walkers/refuters to look for FAILURE first ("find where this breaks; default to a problem if unsure"); a round that surfaces zero problems is suspect, not a pass — re-run with a harsher persona or a fresh model. The synthetic gate is a cheap FILTER; Stage 4 (real humans) is the only real check, which is why it can't be skipped.
 
@@ -142,7 +147,7 @@ Synthetic users can't feel glare, gloves, or GPS drift. You use the app on the r
 
 - BUILD FOR SELF: install it into daily life (launchd job, home-screen PWA, bookmark) and stop — no marketing hours.
 - BUILD FOR MARKET: run `web-launch` for the go-to-market; copy goes through the standing copy-validation pipeline (ICP+CEP → synth survey to 9/10+).
-- Either way, write back: update WORKSPACE.md state, append run learnings to the synth-survey learnings file for the product, and record what the pipeline itself got wrong in `~/.claude/skills/forge/LEARNINGS.md` (create on first run). A run that doesn't write back is a wasted run.
+- Either way, write back: update WORKSPACE.md state, append run learnings to the synth-survey learnings file for the product, and record what the pipeline itself got wrong in the forge install's `LEARNINGS.md` (create on first run). A run that doesn't write back is a wasted run.
 
 ## Speed-run vs full mode summary
 
