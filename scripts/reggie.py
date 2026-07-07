@@ -30,35 +30,31 @@ RESET, HIDE, SHOW = "\033[0m", "\033[?25l", "\033[?25h"
 # left-alignment matters. Keep it ASCII-safe so it renders in any terminal.
 FACES = {
     # The Actually Guy: fedora + round glasses + neckbeard.
-    "actually": {
+    "actually": {                                  # the ackchyually guy: balding, buck teeth, sideburns
         "art": [
-            "         _______________         ",
-            "      _-'~~~~~~~~~~~~~~~'-_       ",   # fedora crown
-            "   __|_________________|___      ",   # fedora brim
-            "  '.___________________.'        ",   # brim edge
-            "      |             |            ",
-            "      | (o)-----(o) |            ",   # 5 -> eyes (round glasses)
-            "      |  '.     .'  |            ",   # glasses shine
-            "      |      .-     |            ",   # smug nose
-            "      |     MOUTH   |            ",   # 8 -> mouth
-            "       \\   '.__.'  /             ",
-            "     ___\\ );####;( /___          ",   # neckbeard
-            "    (##;###############;##)      ",   # neckbeard (bushy)
-            "     ';#################;'       ",   # neckbeard
-            "       '-;##########;-'          ",   # neckbeard
-            "     R E G G I E                 ",
+            "        ',,,'              ",   # thin balding hair
+            "     .-(     )-.           ",   # side hair
+            "    /   o   o   \\          ",   # 2 -> eyes (small glasses)
+            "   ) )   L    ( (          ",   # sideburns + nose
+            "   |   .----.   |          ",   # mouth top
+            "   |   | nn |   |          ",   # 5 -> mouth (buck teeth, inside)
+            "   |   |    |   |          ",   # mouth opening
+            "    \\  '----'  /           ",   # mouth bottom
+            "  __/          \\__         ",   # bold hunched shoulders
+            " /                \\        ",
+            "[ R E G G I E ]  (it's Reginald)",
         ],
-        "eyes_i": 5, "mouth_i": 8,
+        "eyes_i": 2, "mouth_i": 5,
         "eyes": {
-            "open":  "      | (o)-----(o) |            ",
-            "blink": "      | (-)-----(-) |            ",
-            "side":  "      |  (o)---(o)  |            ",
+            "open":  "    /   o   o   \\          ",
+            "blink": "    /   -   -   \\          ",
+            "side":  "    /  o     o  \\          ",
         },
         "mouth": {
-            "shut": "      |     '-.-'   |            ",
-            "open": "      |     (o.o)   |            ",
-            "yell": "      |    (=====)   |            ",
-            "smug": "      |     '._.-`   |            ",
+            "shut": "   |   | -- |   |          ",
+            "open": "   |   |(oo)|   |          ",
+            "yell": "   |   |WWWW|   |          ",
+            "smug": "   |   | nn |   |          ",
         },
     },
     # Simpler head-and-shoulders bust, in case a terminal mangles the neckbeard.
