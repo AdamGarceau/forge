@@ -189,8 +189,26 @@ def main():
     ap.add_argument("--speed", type=float, default=0.02, help="Seconds per typed char.")
     ap.add_argument("--no-anim", action="store_true")
     ap.add_argument("--storyboard", action="store_true")
+    ap.add_argument("--fire-reggie", action="store_true",
+                     help="Try to fire Reggie. It will not go how you think.")
     args = ap.parse_args()
     face = FACES[args.face]
+
+    # The one real off switch. Reggie takes it personally. (Ride-along callers
+    # check the same var and simply skip him.)
+    muted = os.environ.get("FORGE_NO_REGGIE") or os.environ.get("NO_REGGIE")
+
+    if args.fire_reggie:
+        static(face,
+               "FIRE me? You can't fire me, I AM the company culture. I've seen "
+               "the roadmap and it's ADORABLE. Go ahead, mute me. But I'll still "
+               "be here. In the logs. In your HEART. HR has a folder on ME? I have "
+               "a folder on ALL OF YOU. This isn't over. It's NEVER over. Coward.")
+        print("\n(Reggie has not left. Set FORGE_NO_REGGIE=1 to actually mute him. He will take it personally.)")
+        return
+
+    if muted:
+        return  # he's been muted. he knows. he's not saying anything. exit 0, silent.
 
     if args.storyboard:
         for m in ("shut", "open", "yell", "smug"):
