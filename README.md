@@ -4,6 +4,8 @@
 
 ### The AI that builds your idea. And tells you if it's a bad one first.
 
+**It told its own maker no. It'll do the same for you.**
+
 *You've got an idea for an app, a website, a tool, whatever. You're not a programmer (or you are, and you're tired). Forge takes the idea and hands you back something real, tested, and worth showing people. The twist: before it builds a single thing, it checks whether you should build it at all. Sometimes the answer is no. It'll tell you. For free. To your face.*
 
 ![version](https://img.shields.io/badge/version-1.0.0-orange)
@@ -148,7 +150,7 @@ Not your first rodeo? Here's what's actually happening, minus the hand-holding.
 - A research pass mines real reviews, forum threads, and Q&A for your category and pulls the *verbatim* language real buyers use: the actual objections, the exact situations that trigger a purchase.
 - The personas are built from that indexed language, then weighted by population share (your own persona included at its real, small size). They argue like the market, not like a helpful assistant reflecting your own bias back at you.
 - It runs on **local, free models** (Ollama by default, or hosted Claude if you'd rather), so it's a cheap filter you can run a hundred times, not a metered API you're scared to touch.
-- A separate adversarial agent runs with exactly one instruction: kill the idea. If it can't, that's signal. If it can, better now than after you shipped.
+- A separate adversarial agent runs with exactly one instruction: hate your idea and try to kill it. Straight up hater, the good kind of rude, the coworker who doesn't want you to fail. If it can't kill the idea, that's signal. If it can, better now than after you shipped.
 
 **It's a filter, not an oracle.** The synthetic pass catches obvious losers and surfaces objections before you spend real-user goodwill. The only real check is Stage 4, a field test with actual humans, and Forge won't let you pretend you skipped it.
 
