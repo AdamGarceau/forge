@@ -16,6 +16,15 @@ fi
 ln -sfn "$REPO_DIR" "$SKILL_DIR"
 echo "✅ Forge installed: $SKILL_DIR → $REPO_DIR"
 
+# Also link Reggie's /reggie summon skill (same repo, shares scripts/reggie.py).
+REGGIE_DIR="$HOME/.claude/skills/reggie"
+if [[ -e "$REGGIE_DIR" && ! -L "$REGGIE_DIR" ]]; then
+  echo "⚠️  $REGGIE_DIR exists and is not a symlink; skipping /reggie (back it up to enable)."
+else
+  ln -sfn "$REPO_DIR/reggie" "$REGGIE_DIR"
+  echo "✅ /reggie installed: summon the ackchyually guy anytime."
+fi
+
 # ── Build engine: GSD (highly recommended) ────────────────────────────────────
 # Forge's Stage 2 (BUILD) is far better with GSD — it's the recommended build
 # engine, but NOT required: Forge falls back to a direct Claude Code build if
