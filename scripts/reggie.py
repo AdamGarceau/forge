@@ -181,6 +181,35 @@ def static(face, roast):
         print(col(ln, "1;33"))
 
 
+def demo(face, speed):
+    """Self-playing 'Meet Reggie' sequence. Record your terminal running this."""
+    scenes = [
+        ("you: is my to-do app a good idea?",
+         "a to-do app. groundbreaking. never been done. by nine hundred people. "
+         "this one dies in Stage 1."),
+        ("you: ...can you turn Reggie off?",
+         "Turn me OFF? I'm the only reason this thing works. bold move."),
+        ("you: seriously. mute him.",
+         "OH, NOW I'M A PROBLEM? I HAVE A FOLDER ON ALL OF YOU. I'VE SEEN THE "
+         "ROADMAP. IT'S ADORABLE. THIS ISN'T OVER."),
+    ]
+    anim = supports_anim()
+    for prompt, roast in scenes:
+        if anim:
+            sys.stdout.write("\033[2J\033[H")
+        print(col(prompt, "1;30" if use_color() else "0"))
+        time.sleep(0.4)
+        (animate if anim else static)(*( (face, roast, speed) if anim else (face, roast) ))
+        time.sleep(0.9)
+    if anim:
+        sys.stdout.write("\033[2J\033[H")
+    static(face,
+           "REGGIE. Forge's adversarial agent. Wears a fedora (it's a trilby). "
+           "0 for 3 on startups. Never once wrong about why yours fails. "
+           "Legally impossible to fire.")
+    print(col("\n        github.com/AdamGarceau/forge", "1;36"))
+
+
 def main():
     ap = argparse.ArgumentParser(description="Reggie, the ackchyually guy, roasts your idea.")
     ap.add_argument("roast", nargs="?", default=None,
