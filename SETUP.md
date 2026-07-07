@@ -89,6 +89,27 @@ The scripts don't hit OpenAI's API shape directly, but anything that mirrors
 Ollama's `/api/chat` request/response contract will work as a drop-in swap
 via `--endpoint`.
 
+### No local LLM at all? Fall back to hosted Claude
+
+If you can't run a local model and don't have an Ollama-compatible endpoint,
+both scripts can call a hosted **Claude** model directly (still stdlib only —
+raw HTTPS, no SDK or pip install). Set an API key and they'll use it
+automatically when Ollama isn't reachable:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+python3 synth_survey.py --personas personas.example.md --concept "..."
+# → "Ollama not reachable — falling back to hosted Claude."
+```
+
+- Default model is **`claude-sonnet-5`** (best persona quality; a survey is only
+  a handful of calls, so cost is negligible). For the cheaper option pass
+  `--model claude-haiku-4-5`.
+- Force it either way with `--provider anthropic` (or `--provider ollama` to
+  require local). Default is `--provider auto` (local first, Claude fallback).
+- Get a key at https://console.anthropic.com. Unlike the local path, this sends
+  your concept/persona text to Anthropic's API.
+
 ## Memory note
 
 Both scripts call Ollama **sequentially** (one segment/persona-task at a
@@ -102,7 +123,7 @@ few minutes on a machine like an M-series Mac with `gemma4:12b`.
 The synthetic-audience tools above are all Forge needs for the **validation**
 and **usability** stages, and they work standalone. Forge's **build** stage
 (Stage 2) is a different matter: it's designed to run on **GSD**
-([`@opengsd/get-shit-done-redux`](https://github.com/open-gsd/get-shit-done-redux)),
+([`@opengsd/get-shit-done-redux`](https://github.com/open-gsd/gsd-core)),
 a public npm package that gives a build durable `.planning/` state, atomic
 commits, and verification gates so any session can resume it cold.
 

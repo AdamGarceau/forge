@@ -28,17 +28,27 @@ tasks.example.md).
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
-DEFAULT_MODEL = "gemma4:12b"
+DEFAULT_OLLAMA_MODEL = "gemma4:12b"
+# Hosted fallback when no local LLM is available. Sonnet 5 by default; pass
+# --model claude-haiku-4-5 for the cheaper option.
+DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5"
 DEFAULT_ENDPOINT = "http://localhost:11434"
 CURL_TIMEOUT_SECONDS = "300"
 NUM_CTX = 16384
 NUM_PREDICT = 1500
 TEMPERATURE = 0.6
+
+ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_VERSION = "2023-06-01"
+ANTHROPIC_MAX_TOKENS = 4096
 
 SEGMENT_HEADER_RE = re.compile(
     r"Segment\s+\d+:\s*(.+?)\s*\((?:n=(\d+),\s*)?weight=([\d.]+)\)"
@@ -138,17 +148,69 @@ def call_ollama(endpoint, model, system_prompt, user_prompt):
     return data["message"]["content"]
 
 
-def check_ollama_reachable(endpoint):
+def _anthropic_post(api_key, body):
+    req = urllib.request.Request(
+        ANTHROPIC_URL,
+        data=json.dumps(body).encode("utf-8"),
+        method="POST",
+        headers={
+            "x-api-key": api_key,
+            "anthropic-version": ANTHROPIC_VERSION,
+            "content-type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=int(CURL_TIMEOUT_SECONDS)) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def call_anthropic(model, system_prompt, user_prompt):
+    """Hosted-Claude backend (raw HTTP, stdlib only — no SDK/pip install)."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY is not set")
+    body = {
+        "model": model,
+        "max_tokens": ANTHROPIC_MAX_TOKENS,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": user_prompt}],
+        "stream": False,
+        "thinking": {"type": "disabled"},
+    }
+    try:
+        data = _anthropic_post(api_key, body)
+    except urllib.error.HTTPError as e:
+        msg = e.read().decode("utf-8", "replace")
+        if e.code == 400 and "thinking" in msg.lower():
+            body.pop("thinking", None)
+            try:
+                data = _anthropic_post(api_key, body)
+            except urllib.error.HTTPError as e2:
+                raise RuntimeError(
+                    f"Anthropic API HTTP {e2.code}: {e2.read().decode('utf-8', 'replace')[:300]}")
+        else:
+            raise RuntimeError(f"Anthropic API HTTP {e.code}: {msg[:300]}")
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Anthropic API connection error: {e.reason}")
+    if data.get("stop_reason") == "refusal":
+        raise RuntimeError("Anthropic API declined the request (stop_reason=refusal)")
+    for block in data.get("content", []):
+        if block.get("type") == "text" and block.get("text"):
+            return block["text"]
+    raise RuntimeError(f"no text in Anthropic response: {json.dumps(data)[:300]}")
+
+
+def generate(provider, endpoint, model, system_prompt, user_prompt):
+    if provider == "anthropic":
+        return call_anthropic(model, system_prompt, user_prompt)
+    return call_ollama(endpoint, model, system_prompt, user_prompt)
+
+
+def ollama_reachable(endpoint):
     ping = subprocess.run(
         ["curl", "-s", "--max-time", "5", f"{endpoint}/api/tags"],
         capture_output=True, text=True,
     )
-    if ping.returncode != 0 or not ping.stdout:
-        eprint(f"FATAL: Ollama not reachable at {endpoint}")
-        eprint("  - Is Ollama running? Try: ollama serve")
-        eprint("  - Is the endpoint correct? Default is http://localhost:11434")
-        eprint("  - See SETUP.md for install/verify steps.")
-        sys.exit(1)
+    return ping.returncode == 0 and bool(ping.stdout)
 
 
 def build_system_prompt(persona):
@@ -231,6 +293,21 @@ def render_report(model, personas, tasks, results, overall, by_persona_avg):
     return "\n".join(lines)
 
 
+def write_report(report, out):
+    """Write the report, creating parent dirs. On failure, fall back to cwd so an
+    expensive run is never lost to a bad --out path."""
+    out_path = Path(out).expanduser()
+    try:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(report)
+        return out_path
+    except OSError as e:
+        fallback = Path.cwd() / Path(out).name
+        eprint(f"WARNING: could not write to {out_path} ({e}). Saving to {fallback} instead.")
+        fallback.write_text(report)
+        return fallback
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Run personas x tasks through a failure-hunting synthetic usability test via local Ollama.",
@@ -240,7 +317,13 @@ def main():
     ap.add_argument("--personas", required=True, help="Path to personas markdown file.")
     ap.add_argument("--ui", required=True, help="Path to a markdown/text file describing the UI.")
     ap.add_argument("--tasks", required=True, help="Path to a markdown file listing core tasks.")
-    ap.add_argument("--model", default=DEFAULT_MODEL, help=f"Ollama model tag (default: {DEFAULT_MODEL}).")
+    ap.add_argument("--provider", choices=["auto", "ollama", "anthropic"], default="auto",
+                     help="Which backend to use. 'auto' (default): local Ollama if reachable, "
+                          "else hosted Claude if ANTHROPIC_API_KEY is set.")
+    ap.add_argument("--model", default=None,
+                     help="Model tag. Defaults per provider: "
+                          f"'{DEFAULT_OLLAMA_MODEL}' (ollama), '{DEFAULT_ANTHROPIC_MODEL}' (anthropic). "
+                          "For the cheaper hosted option pass --model claude-haiku-4-5.")
     ap.add_argument("--endpoint", default=DEFAULT_ENDPOINT, help=f"Ollama endpoint (default: {DEFAULT_ENDPOINT}).")
     ap.add_argument("--out", default="usability-report.md", help="Output report path (markdown).")
     args = ap.parse_args()
@@ -253,7 +336,33 @@ def main():
             eprint(f"FATAL: {label} file not found: {p}")
             sys.exit(1)
 
-    check_ollama_reachable(args.endpoint)
+    # Resolve which backend to use.
+    provider = args.provider
+    have_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    if provider == "auto":
+        if ollama_reachable(args.endpoint):
+            provider = "ollama"
+        elif have_key:
+            provider = "anthropic"
+            eprint(f"Ollama not reachable at {args.endpoint} — falling back to hosted Claude.")
+        else:
+            eprint("FATAL: no LLM backend available.")
+            eprint("  - Local: start Ollama (see SETUP.md), or")
+            eprint(f"  - Hosted: export ANTHROPIC_API_KEY to use Claude ({DEFAULT_ANTHROPIC_MODEL}).")
+            sys.exit(1)
+    elif provider == "ollama":
+        if not ollama_reachable(args.endpoint):
+            eprint(f"FATAL: Ollama not reachable at {args.endpoint}")
+            eprint("  - Is Ollama running? Try: ollama serve")
+            eprint("  - Or use hosted Claude: --provider anthropic (needs ANTHROPIC_API_KEY).")
+            eprint("  - See SETUP.md for install/verify steps.")
+            sys.exit(1)
+    elif provider == "anthropic" and not have_key:
+        eprint("FATAL: --provider anthropic requires ANTHROPIC_API_KEY to be set.")
+        sys.exit(1)
+
+    model = args.model or (DEFAULT_ANTHROPIC_MODEL if provider == "anthropic" else DEFAULT_OLLAMA_MODEL)
+    source = "Anthropic API" if provider == "anthropic" else args.endpoint
 
     personas = parse_personas(personas_path)
     if not personas:
@@ -270,7 +379,7 @@ def main():
 
     ui_text = ui_path.read_text().strip()
 
-    print(f"Personas: {len(personas)}  Tasks: {len(tasks)}  Model: {args.model} @ {args.endpoint}\n")
+    print(f"Personas: {len(personas)}  Tasks: {len(tasks)}  Model: {model} @ {source}\n")
 
     results = []
     total_runs = len(personas) * len(tasks)
@@ -281,7 +390,7 @@ def main():
             run_i += 1
             user = build_user_prompt(ui_text, task)
             try:
-                out = call_ollama(args.endpoint, args.model, system, user)
+                out = generate(provider, args.endpoint, model, system, user)
             except Exception as e:
                 print(f"[{run_i}/{total_runs}] {persona['name'][:24]:24} {task['name'][:28]:28} -> ERROR: {e}", flush=True)
                 results.append({
@@ -314,9 +423,8 @@ def main():
             weight_sum += persona["weight"]
     overall = round(overall_sum / weight_sum, 2) if weight_sum else None
 
-    report = render_report(args.model, personas, tasks, results, overall, by_persona_avg)
-    out_path = Path(args.out).expanduser()
-    out_path.write_text(report)
+    report = render_report(model, personas, tasks, results, overall, by_persona_avg)
+    out_path = write_report(report, args.out)
 
     fails = [r for r in results if r["completed"] in ("no", "partial")]
     print(f"\nReport written to {out_path}")

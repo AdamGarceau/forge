@@ -12,7 +12,7 @@
 ![stages](https://img.shields.io/badge/pipeline-6_gated_stages-orange)
 ![verdicts](https://img.shields.io/badge/verdicts-self_%7C_market_%7C_don't-orange)
 ![built for](https://img.shields.io/badge/built_for-Claude_Code-black)
-[![works with](https://img.shields.io/badge/works_with-GSD-orange)](https://github.com/open-gsd/get-shit-done-redux)
+[![works with](https://img.shields.io/badge/works_with-GSD-orange)](https://github.com/open-gsd/gsd-core)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
 *Decide whether to build it at all, build it right, then prove it in the real world.*
@@ -27,7 +27,7 @@
 
 ## Why Forge exists
 
-Most AI build tools assume two things a non-coder can't: that the idea is worth building, and that someone knows what "good" looks like. Forge adds the two gates that are usually missing — an **honest validation gate at the front** (should you build this, and for whom) and a **field-test gate at the back** (does it survive real users) — so you go from a raw idea to working, field-verified **software of any kind** (a website, a web app, a native app, a tool, an automation, a dashboard) without holding the system in your head or getting told what you want to hear. For the build itself in the middle, it's designed to run on [GSD](https://github.com/open-gsd/get-shit-done-redux) — highly recommended and auto-offered at install, though optional (Forge falls back to a direct build without it).
+Most AI build tools assume two things a non-coder can't: that the idea is worth building, and that someone knows what "good" looks like. Forge adds the two gates that are usually missing — an **honest validation gate at the front** (should you build this, and for whom) and a **field-test gate at the back** (does it survive real users) — so you go from a raw idea to working, field-verified **software of any kind** (a website, a web app, a native app, a tool, an automation, a dashboard) without holding the system in your head or getting told what you want to hear. For the build itself in the middle, it's designed to run on [GSD](https://github.com/open-gsd/gsd-core) — highly recommended and auto-offered at install, though optional (Forge falls back to a direct build without it).
 
 > **The point:** the founder who built his company's website the hard way — solo, saving ~$20K and months over a web-dev firm — shouldn't have to do it the hard way again. Forge is that whole process, packaged: describe what you need, and it validates, builds, tests, and field-proves it, whatever kind of software it is.
 
@@ -83,7 +83,7 @@ Most "validation" tells the founder what they want to hear. Forge is built to re
 ## Forge + GSD
 
 Forge doesn't reinvent building — it **wraps** it. The build in the middle (Stage 2)
-is designed to run on **[GSD](https://github.com/open-gsd/get-shit-done-redux)**, a
+is designed to run on **[GSD](https://github.com/open-gsd/gsd-core)**, a
 Claude Code build engine that takes a plan to a verified, committed app with durable
 `.planning/` state.
 
@@ -113,7 +113,7 @@ git clone https://github.com/AdamGarceau/forge.git
 cd forge && ./install.sh          # symlinks the skill into ~/.claude/skills/forge
 ```
 
-`install.sh` also detects [GSD](https://github.com/open-gsd/get-shit-done-redux) — Forge's recommended build engine — and **offers** to install it (a public npm package, `@opengsd/get-shit-done-redux`). It's highly encouraged but optional: Forge builds without it, just with less durable state and fewer verification gates. See **[SETUP.md](SETUP.md)** for prerequisites (Ollama, for the synthetic-audience tools) and **[QUICKSTART.md](QUICKSTART.md)** to run the bundled survey/usability tools against the examples in 5 minutes.
+`install.sh` also detects [GSD](https://github.com/open-gsd/gsd-core) — Forge's recommended build engine — and **offers** to install it (a public npm package, `@opengsd/get-shit-done-redux`). It's highly encouraged but optional: Forge builds without it, just with less durable state and fewer verification gates. See **[SETUP.md](SETUP.md)** for prerequisites (Ollama, for the synthetic-audience tools) and **[QUICKSTART.md](QUICKSTART.md)** to run the bundled survey/usability tools against the examples in 5 minutes.
 
 Then, in any Claude Code session:
 
@@ -152,6 +152,7 @@ forge/
 ├── SKILL.md                                   # the skill Claude reads and runs
 ├── install.sh                                 # symlinks the skill; offers to add GSD
 ├── VERSION · LICENSE
+├── assets/banner.png                          # the banner up top
 ├── scripts/                                   # the bundled tooling — works standalone, no other skills needed
 │   ├── synth_survey.py                        # synthetic-audience survey → OVERALL_SCORE + per-segment report
 │   ├── synth_usability.py                     # synthetic usability walkthroughs → ranked punch list

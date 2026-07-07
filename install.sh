@@ -26,10 +26,10 @@ echo "✅ Forge installed: $SKILL_DIR → $REPO_DIR"
 GSD_INSTALL_CMD="npx -y @opengsd/get-shit-done-redux@latest --global"
 
 gsd_present() {
-  [[ -d "$HOME/.claude/get-shit-done" ]] && return 0
-  # (N) = nullglob: expand to nothing (silently) if no gsd-* skills exist
-  local matches=("$HOME"/.claude/skills/gsd-*(N))
-  (( ${#matches} > 0 ))
+  [ -d "$HOME/.claude/get-shit-done" ] && return 0
+  # `find` does the matching (glob is quoted), so this is clean under both zsh
+  # (no nomatch error) and bash (no nullglob dependency) — works for `bash install.sh`.
+  [ -n "$(find "$HOME/.claude/skills" -maxdepth 1 -name 'gsd-*' -print -quit 2>/dev/null)" ]
 }
 
 install_gsd() {
@@ -65,7 +65,7 @@ elif [[ -t 0 ]]; then
   echo "(public npm pkg @opengsd/get-shit-done-redux). It's optional — Forge can"
   echo "build without it, but GSD makes the build far more reliable."
   printf "Install GSD now? [Y/n] "
-  read -r reply
+  read -r reply || reply=""   # EOF (Ctrl-D) → empty, not a set -e abort
   if [[ -z "$reply" || "$reply" == [Yy]* ]]; then
     install_gsd
   else

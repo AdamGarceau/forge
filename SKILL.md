@@ -31,10 +31,10 @@ Forge is the marriage: Deadreckon-style gates around a GSD build engine, with ha
 ## Operating rules (apply to every stage)
 
 1. **Never run from `~`.** Create/enter the project directory first, register it in your workspace registry at Stage 2.
-2. **Honest verdicts are the product.** Never tell the founder what he wants to hear . Population-share weights, external evidence for market claims, adversarial refutation before verdicts.
+2. **Honest verdicts are the product.** Never tell the founder what he wants to hear. Population-share weights, external evidence for market claims, adversarial refutation before verdicts.
 3. **Local models do the simulated humans.** Synth respondents/usability walkers run on `ollama` `gemma4:12b` (`think:false`, `num_ctx:16384`) — free, per the CLAUDE.md router.
 4. **Every stage writes an artifact** into `<project>/validation/` or `.planning/` so any future session resumes cold.
-5. **Gates block.** A stage's exit criteria unmet = the next stage does not start. the founder can override any gate explicitly; record the override in STATE.md.
+5. **Gates block.** A stage's exit criteria unmet = the next stage does not start. The founder can override any gate explicitly; record the override in STATE.md.
 6. **Orchestrated skills are accelerants, not hard requirements.** Forge calls other skills where they exist (`sc:business-panel`, `cep`, `big-idea`, `copy`, `copy-editor`, `web-design-craft`, `web-launch`, `usability-test`, GSD). Only the synthetic-audience tooling is bundled (`scripts/synth_survey.py`, `scripts/synth_usability.py`) and always works. If a called skill isn't installed, **do its job directly with the main model instead of erroring or hanging** — e.g. no `sc:business-panel` → run the expert-panel reasoning inline; no `cep` → do the forum/review research with a research agent; no `copy`/`copy-editor` → write and edit the copy directly against the Stage 1 language bank. Tell the founder which skill would have helped and how to add it, then continue. Never let a missing optional skill stall the pipeline.
 
 ## Stage 0 — Capture + Kill Criteria (before ANY research)
@@ -111,7 +111,7 @@ GV-sprint-style testing with simulated users, iterated in ROUNDS like Deadreckon
 3. Panel-score the round (weighted like Stage 1). **Ship gate: ≥9/10 across the panel, and every core task completable by every segment INCLUDING the accessibility persona.**
 4. Fix, commit (`Usability round N fixes (toward 9/10)` — keep Deadreckon's commit convention), re-run. Expect 3-6 rounds; Deadreckon took 5.
 - Speed-run mode: 2 personas (the founder's + one naive first-timer), gate at 8/10.
-- ⚠️ **Sycophancy guard (this stage and Stage 1):** simulated users PRAISE things real users reject — the single most-replicated failure mode (see validation/07 accuracy research). So: prompt walkers/refuters to look for FAILURE first ("find where this breaks; default to a problem if unsure"); a round that surfaces zero problems is suspect, not a pass — re-run with a harsher persona or a fresh model. The synthetic gate is a cheap FILTER; Stage 4 (real humans) is the only real check, which is why it can't be skipped.
+- ⚠️ **Sycophancy guard (this stage and Stage 1):** simulated users PRAISE things real users reject — the single most-replicated failure mode (see `references/synthetic-audience-evidence.md`). So: prompt walkers/refuters to look for FAILURE first ("find where this breaks; default to a problem if unsure"); a round that surfaces zero problems is suspect, not a pass — re-run with a harsher persona or a fresh model. The synthetic gate is a cheap FILTER; Stage 4 (real humans) is the only real check, which is why it can't be skipped.
 
 ## Stage 4 — FIELD TEST (real world, real punch list)
 
