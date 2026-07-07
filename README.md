@@ -2,11 +2,9 @@
 
 <img src="assets/banner.png" alt="FORGE" width="720">
 
-### One-shot software projects, even if you can't code.
+### The AI that builds your idea. And tells you if it's a bad one first.
 
-*Websites, apps, tools, anything software. You make one request; Forge does the research, the validation, the build, and the testing, so you skip the prompt → hope → fix → fix → fix loop.*
-
-**What you get is a validated MVP, not a finished business.** Forge takes you from idea to something real, tested, and worth launching — fast and cheap. What it saves you is the expensive mistake of building and launching the *wrong* thing. It does not replace real customers voting with their wallets; nothing does. Synthetic audiences get you accurately to the starting line ([the research says grounded ones hit ~85% of a person's own test-retest reliability](references/synthetic-audience-evidence.md)); real people, real testing, and real sales take it to 100%. That honesty is the point — Forge is the fastest cheap path to an MVP you'd actually be willing to put in front of humans.
+*You've got an idea for an app, a website, a tool, whatever. You're not a programmer (or you are, and you're tired). Forge takes the idea and hands you back something real, tested, and worth showing people. The twist: before it builds a single thing, it checks whether you should build it at all. Sometimes the answer is no. It'll tell you. For free. To your face.*
 
 ![version](https://img.shields.io/badge/version-1.0.0-orange)
 ![stages](https://img.shields.io/badge/pipeline-6_gated_stages-orange)
@@ -15,46 +13,79 @@
 [![works with](https://img.shields.io/badge/works_with-GSD-orange)](https://github.com/open-gsd/gsd-core)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
-*Decide whether to build it at all, build it right, then prove it in the real world.*
-
-> **"One-shot" means one shot for you, not one prompt for the machine.** You fire once. Behind the gate, Forge runs the full pipeline and iterates for you — the thrash happens inside the system instead of in your lap.
-
-> **The catch (and the moat): a one-shot is only as good as what Claude has to work with.** A build one-shots cleanly when an authoritative source already defines what "correct" means, like a manual, a standard, or a spec. Something genuinely novel that only *you* understand needs you to teach it first; you can't one-shot what there's no information about. The flip side is the advantage: **feed it a resource nobody else has**, your own manual, your customer call data, your domain expertise written down, and you get a result nobody else can. See [`references/input-context-tiers.md`](references/input-context-tiers.md).
-
 </div>
 
 ---
 
-## Why Forge exists
+## The mess Forge cleans up
 
-Most AI build tools assume two things a non-coder can't: that the idea is worth building, and that someone knows what "good" looks like. Forge adds the two gates that are usually missing — an **honest validation gate at the front** (should you build this, and for whom) and a **field-test gate at the back** (does it survive real users) — so you go from a raw idea to working, field-verified **software of any kind** (a website, a web app, a native app, a tool, an automation, a dashboard) without holding the system in your head or getting told what you want to hear. For the build itself in the middle, it's designed to run on [GSD](https://github.com/open-gsd/gsd-core) — highly recommended and auto-offered at install, though optional (Forge falls back to a direct build without it).
+Right now, building something with AI usually goes like this:
 
-> **The point:** the founder who built his company's website the hard way — solo, saving ~$20K and months over a web-dev firm — shouldn't have to do it the hard way again. Forge is that whole process, packaged: describe what you need, and it validates, builds, tests, and field-proves it, whatever kind of software it is.
+1. You type a giant wall of text at a chatbot.
+2. You cross your fingers.
+3. It gives you something that's 70% right and 30% cursed.
+4. You try to fix it. It breaks something else. Back to step 3. Forever.
 
-It was reverse-engineered from three builds that actually worked:
+It's slow, it's maddening, and here's the kicker: you might be grinding through all of that to build something nobody actually wanted.
 
-- **[DEADRECKON](examples/deadreckon.md)** — an offline Army land-nav app built from a photo of a field manual, over lunch, from a phone. Ran the full validation-and-usability gauntlet and field-tested precise. *This is the proof.*
-- **A personal compliance tracker** — a tool whose validation honestly returned *build for self, not market* instead of flattering the founder.
-- **Nudge** — 266 atomic commits across 16 GSD phases with verification and human-UAT gates. The build backbone.
+**Forge knows the right order to do things in, so you don't have to.** It asks the smart questions first, does the homework, and quietly runs your idea past a fake focus group, all *before* it writes one line of code. The thrash never gets a chance to start.
+
+You bring the idea and the gut calls. Forge brings the plan, the build, and the reality checks.
 
 ---
 
-## The pipeline
+## It will tell you "no." On purpose. It's kind of the best part.
+
+Every other build tool has exactly one goal: get you to build, because building is how they get paid. So they cheer. *Amazing idea! So brave! Ship it!*
+
+Forge isn't selling you anything, so it can just be honest. Every idea walks out one of three doors:
+
+🛠️ **Build it for yourself.** The pain is real and it's yours, but there's no crowd out there waiting to pay for it. Cool. Build it, use it, get on with your life. Don't quit your job over it.
+
+🚀 **Build it for the world.** There are real people, already gathered somewhere, already spending money or duct-taping a workaround. This one might actually be a business.
+
+🛑 **Don't build it.** Somebody already made it for free, or it's a legal headache, or the idea just doesn't hold up to a hard look. Way better to hear that now than after three lost weekends.
+
+Two times it actually did this:
+
+- **We pointed Forge at Forge.** Before we released it, we ran the tool on itself. It came back with "build it for yourself, not the world," for one gloriously humbling reason: nobody except the person who made it had actually used it yet. The fake focus group even named the exact kind of user we should stop chasing. The tool told its own creator to sit down. That is the whole point of the thing.
+- **A little compliance-reminder app.** Genuinely handy, genuinely annoying to live without. But the research dug up a free thing that already did the job. Verdict: keep it for yourself, don't try to sell it. That saved weeks of shoving a boulder uphill.
+
+You can always overrule it. It just won't flatter you to keep you happy.
+
+---
+
+## "Hang on, a fake focus group? That sounds made up."
+
+Totally fair. Here's why it isn't snake oil:
+
+- **The fake customers are built from real ones.** Forge reads actual reviews, actual forum rants, actual questions real people asked about your kind of product, and builds its test crowd out of all that. They gripe the way your real market gripes, not the way a chirpy robot does.
+- **It counts the crowd honestly.** Your own opinion gets weighted at its true size (small), not cranked up just because you're excited. An idea can't "win" simply because the simulation liked it.
+- **It's a smoke alarm, not the fire department.** The fake audience is there to catch obvious duds and surface the real objections early, before you burn actual people's goodwill. The real test is Stage 4, where you use the thing out in the world. That step is not skippable.
+- **And no, it's not magic. We checked.** Grounded fake audiences land around [85 percent as reliable as asking a real person the same thing twice](references/synthetic-audience-evidence.md). That gets you to the starting line fast and cheap. Real humans carry you the rest of the way.
+
+Oh, and Forge is free and open-source, and so is everything it uses. No paid tier, no "upgrade to unlock," nothing to buy. If it felt too good and you were bracing for the catch, there isn't one.
+
+---
+
+## What actually happens, start to finish
+
+None of this is busywork. It's the cheap stuff done first, so the expensive stuff (building) only ever happens to an idea that earned it.
 
 ```mermaid
 flowchart TD
-    A["💡 Stage 0<br/>CAPTURE + KILL CRITERIA<br/><i>written before research so the bar can't bend</i>"] --> B
-    B["🔎 Stage 1 — VALIDATE<br/>expert panel · CEP/ICP research · synth survey<br/>· adversarial refutation"]
-    B --> V{"⚖️ VERDICT"}
-    V -->|"pain is real,<br/>demand only synthetic"| SELF["🛠️ BUILD FOR SELF<br/><i>speed-run, first-class outcome</i>"]
-    V -->|"external demand proven,<br/>survived refutation"| MKT["🚀 BUILD FOR MARKET<br/><i>full run</i>"]
-    V -->|"kill criteria hit"| STOP["🛑 DON'T BUILD<br/><i>say it plainly, archive</i>"]
+    A["💡 Stage 0<br/>WRITE DOWN THE IDEA + THE DEAL-BREAKERS<br/><i>before any research, so you can't move the goalposts</i>"] --> B
+    B["🔎 Stage 1: IS IT ANY GOOD?<br/>expert take · real-world research · fake focus group<br/>· one agent whose only job is to kill the idea"]
+    B --> V{"⚖️ THE VERDICT"}
+    V -->|"real pain,<br/>no paying crowd"| SELF["🛠️ BUILD FOR YOURSELF<br/><i>a totally fine outcome</i>"]
+    V -->|"real crowd,<br/>survived the beating"| MKT["🚀 BUILD FOR THE WORLD<br/><i>might be a business</i>"]
+    V -->|"deal-breaker hit"| STOP["🛑 DON'T BUILD IT<br/><i>said plainly, then dropped</i>"]
     SELF --> C
     MKT --> C
-    C["🔨 Stage 2 — BUILD<br/>GSD from the project dir · spec from the research"]
-    C --> D["🧪 Stage 3 — SYNTH USABILITY<br/>personas walk the real UI · panel-scored · iterate to 9/10"]
-    D --> E["🥾 Stage 4 — FIELD TEST<br/>real world · punch list · fix · confirm"]
-    E --> F["📦 Stage 5 — SHIP + LEARNINGS<br/>install into life / go-to-market · write back"]
+    C["🔨 Stage 2: BUILD THE THING<br/>a real, working version gets made"]
+    C --> D["🧪 Stage 3: TRY TO BREAK IT<br/>fake users hunt for everything confusing · fix · repeat"]
+    D --> E["🥾 Stage 4: USE IT FOR REAL<br/>you take it into the actual world · note what stinks · fix it"]
+    E --> F["📦 Stage 5: SHIP IT + KEEP THE LESSONS"]
 
     style V fill:#ff8c00,stroke:#333,color:#000
     style STOP fill:#c0392b,stroke:#333,color:#fff
@@ -62,110 +93,76 @@ flowchart TD
     style MKT fill:#27ae60,stroke:#333,color:#fff
 ```
 
----
+In plain words:
 
-## The three verdicts (the honest part)
-
-Most "validation" tells the founder what they want to hear. Forge is built to refuse. Every idea exits Stage 1 as exactly one of:
-
-| Verdict | What it means | What earns it |
-| --- | --- | --- |
-| 🛠️ **BUILD FOR SELF** | The pain is real and yours, but demand evidence is missing or only synthetic. **A first-class outcome, not a consolation.** | Real personal pain + a build small enough to justify itself |
-| 🚀 **BUILD FOR MARKET** | There's a nameable audience already gathering, spending or painfully working around the problem, and a distribution path you can reach. | External demand evidence that survives an adversarial refutation pass |
-| 🛑 **DON'T BUILD** | A good-enough incumbent, legal/maintenance burden, or the refutation stands. | Any pre-registered kill criterion is hit |
-
-**Two hard rules keep it honest:**
-1. Synthetic-audience weights reflect **population share**, never the founder's own persona up-weighted. A market verdict founded only on synthetic enthusiasm is forbidden.
-2. Kill criteria are written **before** research, so the bar can't bend to fit the evidence.
+0. **Jot down the idea and your deal-breakers first**, so the bar can't quietly bend later to fit whatever you find.
+1. **Find out if it's any good.** An expert take, real research, the fake focus group, and one agent whose entire personality is trying to kill your idea. Out pops one of the three verdicts.
+2. **Build it.** This is where an actual working thing shows up.
+3. **Try to break it.** Simulated users, including someone using a screen reader (because not everyone points and clicks), walk through it looking for anything clunky. It gets fixed until it's smooth.
+4. **Use it for real.** You take it into the actual world and write down what drove you nuts. Then that gets fixed too.
+5. **Ship it, and keep what you learned.**
 
 ---
 
-## Forge + GSD
+## Try it in five minutes
 
-Forge doesn't reinvent building — it **wraps** it. The build in the middle (Stage 2)
-is designed to run on **[GSD](https://github.com/open-gsd/gsd-core)**, a
-Claude Code build engine that takes a plan to a verified, committed app with durable
-`.planning/` state.
-
-What Forge adds is the two gates GSD doesn't have:
-
-- **In front** — an honest *should you build this, and for whom?* validation gate that can return **DON'T BUILD**.
-- **Behind** — a *does it survive real users?* synthetic-usability-to-9/10 loop, then a real-world field test.
-
-So the pairing is the whole loop: **idea → validated → built (GSD) → field-proven.**
-GSD assumes the idea is worth building and verifies the code matches the plan; Forge
-decides *what* to build and proves it works on a real human.
-
-GSD is **highly recommended**, and [`install.sh`](install.sh) detects and *offers* to
-add it — but it's optional. Forge falls back to a direct Claude Code build if you'd
-rather not, and the validation + usability tools work standalone regardless.
-
-> *Not affiliated with GSD — Forge just pairs well with it.*
-
----
-
-## Quick start
-
-Forge is a [Claude Code](https://claude.com/claude-code) skill. Install it and just talk to Claude about your idea.
+Forge lives inside [Claude Code](https://claude.com/claude-code). That's the one techy sentence, I promise.
 
 ```bash
 git clone https://github.com/AdamGarceau/forge.git
-cd forge && ./install.sh          # symlinks the skill into ~/.claude/skills/forge
+cd forge && ./install.sh
 ```
 
-`install.sh` also detects [GSD](https://github.com/open-gsd/gsd-core) — Forge's recommended build engine — and **offers** to install it (a public npm package, `@opengsd/get-shit-done-redux`). It's highly encouraged but optional: Forge builds without it, just with less durable state and fewer verification gates. See **[SETUP.md](SETUP.md)** for prerequisites (Ollama, for the synthetic-audience tools) and **[QUICKSTART.md](QUICKSTART.md)** to run the bundled survey/usability tools against the examples in 5 minutes.
+Then you just... talk to it:
 
-Then, in any Claude Code session:
+> "I have an idea for an app that helps dog walkers keep track of clients."
+>
+> "Should I build a tool that plans my meals for the week?"
+>
+> "Is this even worth building?"
 
-```
-"I have an idea for an app that ..."
-"should I build a tool that ...?"
-"is this worth building?"
-```
+You never have to say the word "Forge." It notices you're about to build something and quietly takes the wheel.
 
-Forge triggers on any new-build or is-it-worth-it moment — you never have to name it. It runs the gates and hands you judgment calls, not homework.
+New here? [QUICKSTART.md](QUICKSTART.md) runs the whole thing on an example in five minutes. The one-time setup (a free download or two) lives in [SETUP.md](SETUP.md).
 
 ---
 
-## Speed-run vs full run
+## Forge + GSD, in one breath
 
-A personal tool shouldn't pay market-launch overhead. Forge scales the gates to the verdict:
+Forge doesn't reinvent the actual building. For that it leans on [GSD](https://github.com/open-gsd/gsd-core), a free tool that turns a plan into working, tested code.
 
-| Stage | 🛠️ Speed-run (build for self) | 🚀 Full (build for market) |
-| --- | --- | --- |
-| Kill criteria | Required (one paragraph) | Required |
-| Validate | Panel + survey if signal is obvious | All four artifacts + refutation |
-| Build | Compressed GSD phases | Full GSD + verification |
-| Usability | 2 personas, gate 8/10 | Full panel, gate 9/10 |
-| Field test | 1 pass + punch list | 2 passes minimum |
-| Ship | Install into your life | Go-to-market + copy pipeline |
+Picture it like this: GSD is a very good contractor. Forge is the part that makes sure you're building a house someone wants to live in, then walks through it afterward to check that the doors actually close.
+
+The installer offers to add GSD for you. Highly recommended, completely optional (Forge builds fine on its own), and not affiliated. They just get along.
 
 ---
 
-## Repo layout
+## Under the hood, for the builders
 
-```
-forge/
-├── README.md                                  # you are here
-├── SETUP.md                                   # prerequisites: Ollama (+ optional GSD)
-├── QUICKSTART.md                              # run the bundled tools in 5 minutes
-├── SKILL.md                                   # the skill Claude reads and runs
-├── install.sh                                 # symlinks the skill; offers to add GSD
-├── VERSION · LICENSE
-├── assets/banner.png                          # the banner up top
-├── scripts/                                   # the bundled tooling — works standalone, no other skills needed
-│   ├── synth_survey.py                        # synthetic-audience survey → OVERALL_SCORE + per-segment report
-│   ├── synth_usability.py                     # synthetic usability walkthroughs → ranked punch list
-│   └── personas / ui / tasks .example.md      # ready-to-run examples
-├── references/                                # the evidence + how-it-works context
-│   ├── synthetic-audience-evidence.md         # why grounded synthetic audiences work (~85%)
-│   ├── deadreckon-session-patterns.md         # 8 collaboration behaviors for the build
-│   ├── grounding-data-tiers.md
-│   └── input-context-tiers.md
-├── examples/
-│   └── deadreckon.md                          # the canonical success story
-└── LEARNINGS.md                               # what the pipeline itself gets right/wrong
-```
+Not your first rodeo? Here's what's actually happening, minus the hand-holding.
+
+**Forge wraps your build, it doesn't replace it.** You keep your setup. Forge is Stages 0-1 in front and 3-5 behind; the build itself (Stage 2) hands off to GSD or your existing Claude Code flow and respects your `.planning/` state. Nothing to abandon. Slogan version: *Forge is Step 0. GSD is the build.*
+
+**The "fake focus group" is grounded, not vibes.** This is the part skeptics rightly poke at, so here's the actual mechanism:
+
+- A research pass mines real reviews, forum threads, and Q&A for your category and pulls the *verbatim* language real buyers use: the actual objections, the exact situations that trigger a purchase.
+- The personas are built from that indexed language, then weighted by population share (your own persona included at its real, small size). They argue like the market, not like a helpful assistant reflecting your own bias back at you.
+- It runs on **local, free models** (Ollama by default, or hosted Claude if you'd rather), so it's a cheap filter you can run a hundred times, not a metered API you're scared to touch.
+- A separate adversarial agent runs with exactly one instruction: kill the idea. If it can't, that's signal. If it can, better now than after you shipped.
+
+**It's a filter, not an oracle.** The synthetic pass catches obvious losers and surfaces objections before you spend real-user goodwill. The only real check is Stage 4, a field test with actual humans, and Forge won't let you pretend you skipped it.
+
+**The tooling is plain and readable.** The synthetic-audience scripts are a couple hundred lines of stdlib Python plus curl. Open them, read the exact prompt they send, fork them if your question set is different. No black box, no lock-in.
+
+---
+
+## Where it came from
+
+Forge was reverse-engineered from three things that genuinely worked:
+
+- **[DEADRECKON](examples/deadreckon.md)**: an offline Army map app, built from a photo of a field manual, over lunch, from a phone. It went through the entire gauntlet and held up out in the field. This is the proof.
+- **A compliance tracker** whose own review politely said, "yeah, keep this one to yourself."
+- **Nudge**: a real, live app, built in 266 tiny checked steps. The proof it holds up on something serious.
 
 ---
 
