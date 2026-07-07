@@ -32,31 +32,33 @@ FACES = {
     # The Actually Guy: fedora + round glasses + neckbeard.
     "actually": {
         "art": [
-            "           .-=========-.           ",
-            "         .'  |_________|  '.        ",
-            "      .-'=====|_________|=====`-.   ",
-            "     /                          \\  ",
-            "    |     .----.      .----.     |  ",
-            "    |     | oo |      | oo |     |  ",   # 5 -> eyes
-            "    |     '----'      '----'     |  ",
-            "    |            .--.            |  ",
-            "    |           MOUTHY           |  ",   # 8 -> mouth
-            "    |          '------'          |  ",
-            "     \\       ,;'######';,       /   ",
-            "      '.___,;##############;,___.'   ",
-            "        [ R E G G I E ] tips fedora ",
+            "         _______________         ",
+            "      _-'~~~~~~~~~~~~~~~'-_       ",   # fedora crown
+            "   __|_________________|___      ",   # fedora brim
+            "  '.___________________.'        ",   # brim edge
+            "      |             |            ",
+            "      | (o)-----(o) |            ",   # 5 -> eyes (round glasses)
+            "      |  '.     .'  |            ",   # glasses shine
+            "      |      .-     |            ",   # smug nose
+            "      |     MOUTH   |            ",   # 8 -> mouth
+            "       \\   '.__.'  /             ",
+            "     ___\\ );####;( /___          ",   # neckbeard
+            "    (##;###############;##)      ",   # neckbeard (bushy)
+            "     ';#################;'       ",   # neckbeard
+            "       '-;##########;-'          ",   # neckbeard
+            "     R E G G I E                 ",
         ],
         "eyes_i": 5, "mouth_i": 8,
         "eyes": {
-            "open":  "    |     | oo |      | oo |     |  ",
-            "blink": "    |     | -- |      | -- |     |  ",
-            "side":  "    |     |  o°|      |°o  |     |  ",
+            "open":  "      | (o)-----(o) |            ",
+            "blink": "      | (-)-----(-) |            ",
+            "side":  "      |  (o)---(o)  |            ",
         },
         "mouth": {
-            "shut": "    |           \\____/           |  ",
-            "open": "    |           < oo >           |  ",
-            "yell": "    |          ( ====== )        |  ",
-            "smug": "    |            \\__/`           |  ",
+            "shut": "      |     '-.-'   |            ",
+            "open": "      |     (o.o)   |            ",
+            "yell": "      |    (=====)   |            ",
+            "smug": "      |     '._.-`   |            ",
         },
     },
     # Simpler head-and-shoulders bust, in case a terminal mangles the neckbeard.
