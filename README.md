@@ -12,6 +12,7 @@
 ![stages](https://img.shields.io/badge/pipeline-6_gated_stages-orange)
 ![verdicts](https://img.shields.io/badge/verdicts-self_%7C_market_%7C_don't-orange)
 ![built for](https://img.shields.io/badge/built_for-Claude_Code-black)
+[![works with](https://img.shields.io/badge/works_with-GSD-orange)](https://github.com/open-gsd/get-shit-done-redux)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
 *Decide whether to build it at all, build it right, then prove it in the real world.*
@@ -26,7 +27,7 @@
 
 ## Why Forge exists
 
-Most AI build tools assume two things a non-coder can't: that the idea is worth building, and that someone knows what "good" looks like. Forge adds the two gates that are usually missing — an **honest validation gate at the front** (should you build this, and for whom) and a **field-test gate at the back** (does it survive real users) — so you go from a raw idea to working, field-verified **software of any kind** (a website, a web app, a native app, a tool, an automation, a dashboard) without holding the system in your head or getting told what you want to hear. For the build itself in the middle, it runs on GSD.
+Most AI build tools assume two things a non-coder can't: that the idea is worth building, and that someone knows what "good" looks like. Forge adds the two gates that are usually missing — an **honest validation gate at the front** (should you build this, and for whom) and a **field-test gate at the back** (does it survive real users) — so you go from a raw idea to working, field-verified **software of any kind** (a website, a web app, a native app, a tool, an automation, a dashboard) without holding the system in your head or getting told what you want to hear. For the build itself in the middle, it's designed to run on [GSD](https://github.com/open-gsd/get-shit-done-redux) — highly recommended and auto-offered at install, though optional (Forge falls back to a direct build without it).
 
 > **The point:** the founder who built his company's website the hard way — solo, saving ~$20K and months over a web-dev firm — shouldn't have to do it the hard way again. Forge is that whole process, packaged: describe what you need, and it validates, builds, tests, and field-proves it, whatever kind of software it is.
 
@@ -79,14 +80,40 @@ Most "validation" tells the founder what they want to hear. Forge is built to re
 
 ---
 
+## Forge + GSD
+
+Forge doesn't reinvent building — it **wraps** it. The build in the middle (Stage 2)
+is designed to run on **[GSD](https://github.com/open-gsd/get-shit-done-redux)**, a
+Claude Code build engine that takes a plan to a verified, committed app with durable
+`.planning/` state.
+
+What Forge adds is the two gates GSD doesn't have:
+
+- **In front** — an honest *should you build this, and for whom?* validation gate that can return **DON'T BUILD**.
+- **Behind** — a *does it survive real users?* synthetic-usability-to-9/10 loop, then a real-world field test.
+
+So the pairing is the whole loop: **idea → validated → built (GSD) → field-proven.**
+GSD assumes the idea is worth building and verifies the code matches the plan; Forge
+decides *what* to build and proves it works on a real human.
+
+GSD is **highly recommended**, and [`install.sh`](install.sh) detects and *offers* to
+add it — but it's optional. Forge falls back to a direct Claude Code build if you'd
+rather not, and the validation + usability tools work standalone regardless.
+
+> *Not affiliated with GSD — Forge just pairs well with it.*
+
+---
+
 ## Quick start
 
 Forge is a [Claude Code](https://claude.com/claude-code) skill. Install it and just talk to Claude about your idea.
 
 ```bash
-git clone https://github.com/AdamGYA/forge.git
+git clone https://github.com/AdamGarceau/forge.git
 cd forge && ./install.sh          # symlinks the skill into ~/.claude/skills/forge
 ```
+
+`install.sh` also detects [GSD](https://github.com/open-gsd/get-shit-done-redux) — Forge's recommended build engine — and **offers** to install it (a public npm package, `@opengsd/get-shit-done-redux`). It's highly encouraged but optional: Forge builds without it, just with less durable state and fewer verification gates. See **[SETUP.md](SETUP.md)** for prerequisites (Ollama, for the synthetic-audience tools) and **[QUICKSTART.md](QUICKSTART.md)** to run the bundled survey/usability tools against the examples in 5 minutes.
 
 Then, in any Claude Code session:
 
@@ -120,14 +147,23 @@ A personal tool shouldn't pay market-launch overhead. Forge scales the gates to 
 ```
 forge/
 ├── README.md                                  # you are here
+├── SETUP.md                                   # prerequisites: Ollama (+ optional GSD)
+├── QUICKSTART.md                              # run the bundled tools in 5 minutes
 ├── SKILL.md                                   # the skill Claude reads and runs
-├── VERSION
-├── install.sh                                 # symlink into ~/.claude/skills
-├── LEARNINGS.md                               # what the pipeline itself gets right/wrong
-├── references/
-│   └── deadreckon-session-patterns.md         # 8 collaboration behaviors for the build
-└── examples/
-    └── deadreckon.md                          # the canonical success story
+├── install.sh                                 # symlinks the skill; offers to add GSD
+├── VERSION · LICENSE
+├── scripts/                                   # the bundled tooling — works standalone, no other skills needed
+│   ├── synth_survey.py                        # synthetic-audience survey → OVERALL_SCORE + per-segment report
+│   ├── synth_usability.py                     # synthetic usability walkthroughs → ranked punch list
+│   └── personas / ui / tasks .example.md      # ready-to-run examples
+├── references/                                # the evidence + how-it-works context
+│   ├── synthetic-audience-evidence.md         # why grounded synthetic audiences work (~85%)
+│   ├── deadreckon-session-patterns.md         # 8 collaboration behaviors for the build
+│   ├── grounding-data-tiers.md
+│   └── input-context-tiers.md
+├── examples/
+│   └── deadreckon.md                          # the canonical success story
+└── LEARNINGS.md                               # what the pipeline itself gets right/wrong
 ```
 
 ---

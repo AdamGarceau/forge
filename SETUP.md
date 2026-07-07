@@ -96,3 +96,23 @@ time), not in parallel — this is deliberate so you don't blow past your
 machine's RAM running multiple large-model instances at once. A full survey
 across 3 segments, or a usability run across 3 personas x 4 tasks, takes a
 few minutes on a machine like an M-series Mac with `gemma4:12b`.
+
+## Build engine (highly recommended): GSD
+
+The synthetic-audience tools above are all Forge needs for the **validation**
+and **usability** stages, and they work standalone. Forge's **build** stage
+(Stage 2) is a different matter: it's designed to run on **GSD**
+([`@opengsd/get-shit-done-redux`](https://github.com/open-gsd/get-shit-done-redux)),
+a public npm package that gives a build durable `.planning/` state, atomic
+commits, and verification gates so any session can resume it cold.
+
+GSD is **highly recommended but optional** — Forge falls back to a direct
+Claude Code build if it's absent, just with less durable state. `install.sh`
+**detects and offers** to install it; you can also add it anytime:
+
+```bash
+npx -y @opengsd/get-shit-done-redux@latest --global
+```
+
+This needs Node/npm (https://nodejs.org). To confirm it's installed, look for
+`gsd-*` skills in `~/.claude/skills/` or the `~/.claude/get-shit-done/` folder.

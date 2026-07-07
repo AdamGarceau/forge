@@ -35,6 +35,7 @@ Forge is the marriage: Deadreckon-style gates around a GSD build engine, with ha
 3. **Local models do the simulated humans.** Synth respondents/usability walkers run on `ollama` `gemma4:12b` (`think:false`, `num_ctx:16384`) — free, per the CLAUDE.md router.
 4. **Every stage writes an artifact** into `<project>/validation/` or `.planning/` so any future session resumes cold.
 5. **Gates block.** A stage's exit criteria unmet = the next stage does not start. the founder can override any gate explicitly; record the override in STATE.md.
+6. **Orchestrated skills are accelerants, not hard requirements.** Forge calls other skills where they exist (`sc:business-panel`, `cep`, `big-idea`, `copy`, `copy-editor`, `web-design-craft`, `web-launch`, `usability-test`, GSD). Only the synthetic-audience tooling is bundled (`scripts/synth_survey.py`, `scripts/synth_usability.py`) and always works. If a called skill isn't installed, **do its job directly with the main model instead of erroring or hanging** — e.g. no `sc:business-panel` → run the expert-panel reasoning inline; no `cep` → do the forum/review research with a research agent; no `copy`/`copy-editor` → write and edit the copy directly against the Stage 1 language bank. Tell the founder which skill would have helped and how to add it, then continue. Never let a missing optional skill stall the pipeline.
 
 ## Stage 0 — Capture + Kill Criteria (before ANY research)
 
@@ -60,14 +61,29 @@ Then the **adversarial pass**: a separate agent (fresh context, ideally a differ
 
 A MARKET verdict founded only on synthetic enthusiasm is forbidden — cap it at BUILD FOR SELF and say why.
 
-## Stage 2 — BUILD (GSD is the build engine — locked)
+## Stage 2 — BUILD (GSD strongly recommended)
 
-**GSD is Forge's build engine, not an option.** Stage 2 IS a GSD run. Forge never
-hand-rolls a bespoke build process; it delegates wholesale to GSD (`/gsd-new-project`
-→ `/gsd-plan-phase` → `/gsd-execute-phase` → `/gsd-verify-work`, or `/gsd-quick` for
-speed-runs). Forge's contribution is the gates AROUND the build (Stages 0-1 in front,
-3-5 behind), never a replacement for the build discipline itself. If GSD isn't
-initialized for the project, initialize it — do not improvise phases.
+**GSD is Forge's recommended build engine — highly encouraged, not required.**
+When it's installed, Stage 2 IS a GSD run: Forge delegates wholesale to GSD
+(`/gsd-new-project` → `/gsd-plan-phase` → `/gsd-execute-phase` → `/gsd-verify-work`,
+or `/gsd-quick` for speed-runs). GSD gives the build durable `.planning/` state,
+atomic commits, and verification gates so any session can resume it cold — the
+discipline a non-coder founder needs. Forge's own contribution is the gates AROUND
+the build (Stages 0-1 in front, 3-5 behind).
+
+**If GSD isn't installed, don't stop — recommend it, then fall back gracefully:**
+- Offer to add it first (it's a public npm package):
+  `npx -y @opengsd/get-shit-done-redux@latest --global` (install.sh offers this too).
+  Encourage it — the durable-state + verification discipline is a real quality
+  difference, not a formality.
+- If the founder declines or it's unavailable, build directly with Claude Code while
+  keeping GSD's disciplines by hand: create the project dir, write a lightweight
+  `.planning/` (requirements from Stage 1 artifacts, a phase list, a STATE.md so a
+  future session resumes cold), commit atomically per feature, and verify each
+  feature runs before moving on. Stages 0-1 and 3-5 are unchanged.
+
+Never silently skip the build discipline because GSD is absent — degrade
+gracefully, don't disappear.
 
 **Before building, read `references/deadreckon-session-patterns.md`** — the eight
 collaboration behaviors from the Deadreckon session (outcome-language translation,
@@ -77,7 +93,7 @@ one-exact-action ops asks, fallbacks for every automation). They are how a
 non-coder founder stays in command of a build.
 
 - `mkdir` the project, `cd` in, add it to your workspace registry, then run GSD: `/gsd-new-project` (full mode) or `/gsd-quick`-style compressed phases (speed-run). The PROJECT.md context comes FROM Stage 1 artifacts — segments, language bank, and top objections become requirements (e.g., a privacy-tool survey where "your data never leaves your computer" became a UI requirement, not a marketing line).
-- Front-end work loads `web-design-craft`; anything with charts loads `dataviz`. Accessibility is a standing requirement (Brooke) — build to it, and it gets gated in Stage 3.
+- Front-end work loads `web-design-craft`; anything with charts loads `dataviz`. Accessibility is a standing requirement (build as if a blind / low-vision user is a primary user) — build to it, and it gets gated in Stage 3.
 - Deploy/hosting per project type (`wrangler pages deploy` pattern; the deploy config lives in the repo like Deadreckon's, so redeploys are one command).
 
 **COPY IS PART OF THE BUILD (not a Stage-5 afterthought).** Any user-facing software — especially websites and landing pages — is only as good as its words. For every user-facing surface (headlines, value props, landing copy, empty states, CTAs, onboarding), run the **Copy OS pipeline**: `big-idea` to pick the angle, `copy` to write it (grounded in the SAME Stage 1 CEP research + language bank — do not re-research), `copy-editor` for the final pass, gated through `synth-survey` to 9/10+ per a standing copy-validation rule (validate all user-facing copy against the same audience — treat as non-negotiable, not market-only). The Stage 1 personas and language bank are the inputs; the copy is tested against the same audience as the product.
@@ -91,7 +107,7 @@ non-coder founder stays in command of a build.
 GV-sprint-style testing with simulated users, iterated in ROUNDS like Deadreckon's five:
 
 1. Define the 3-5 **core tasks** a user must complete (from Stage 1 CEPs — e.g., "log this week's 4 contacts and export them").
-2. For each persona segment (from `/tmp/copy-personas.md` / Stage 1), run a **walkthrough**: feed gemma4:12b the persona + the actual UI state (screenshots described, or the rendered HTML/text of each screen) task-by-task; it narrates where it hesitates, misreads, or gives up, then scores task completion + confidence 1-10. Use the `usability-test` skill if its harness fits; otherwise the synth-survey call pattern. **Include a screen-reader / low-vision persona** every run — accessibility is gated here, not assumed (Brooke). For a web build, Claude can also drive the real UI (browser/computer control) and observe it directly, not just read the HTML.
+2. For each persona segment (from your Stage 1 personas file), run a **walkthrough**: feed gemma4:12b the persona + the actual UI state (screenshots described, or the rendered HTML/text of each screen) task-by-task; it narrates where it hesitates, misreads, or gives up, then scores task completion + confidence 1-10. Use the `usability-test` skill if it's installed and its harness fits; otherwise use the bundled `scripts/synth_usability.py` (no extra skills needed). **Include a screen-reader / low-vision persona** every run — accessibility is gated here, not assumed. For a web build, Claude can also drive the real UI (browser/computer control) and observe it directly, not just read the HTML.
 3. Panel-score the round (weighted like Stage 1). **Ship gate: ≥9/10 across the panel, and every core task completable by every segment INCLUDING the accessibility persona.**
 4. Fix, commit (`Usability round N fixes (toward 9/10)` — keep Deadreckon's commit convention), re-run. Expect 3-6 rounds; Deadreckon took 5.
 - Speed-run mode: 2 personas (the founder's + one naive first-timer), gate at 8/10.
