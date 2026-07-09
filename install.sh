@@ -25,6 +25,15 @@ else
   echo "✅ /reggie installed: summon the ackchyually guy anytime."
 fi
 
+# Also link the /forge-update command (same repo) so users can pull new versions.
+FU_DIR="$HOME/.claude/skills/forge-update"
+if [[ -e "$FU_DIR" && ! -L "$FU_DIR" ]]; then
+  echo "⚠️  $FU_DIR exists and is not a symlink; skipping /forge-update (back it up to enable)."
+else
+  ln -sfn "$REPO_DIR/forge-update" "$FU_DIR"
+  echo "✅ /forge-update installed: run it anytime to pull the latest Forge."
+fi
+
 # ── Build engine: GSD (highly recommended) ────────────────────────────────────
 # Forge's Stage 2 (BUILD) is far better with GSD — it's the recommended build
 # engine, but NOT required: Forge falls back to a direct Claude Code build if

@@ -18,6 +18,8 @@ description: >
 
 # /forge — Idea to Field-Tested App
 
+> **Version 1.1.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+
 The standing process for every new build. Born 2026-07-06 from three proven runs:
 
 - **A personal compliance tracker** — the validation front-end: expert panel → CEP/ICP external research → synth-survey gate, which correctly returned REWORK/build-for-self instead of flattery.
