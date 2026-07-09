@@ -34,6 +34,50 @@ else
   echo "✅ /forge-update installed: run it anytime to pull the latest Forge."
 fi
 
+# ── Optional: SessionStart "update available" nudge ───────────────────────────
+# Registers a lightweight SessionStart hook that checks for new Forge versions
+# (throttled to one network fetch/day) and prints a one-line nudge when you're
+# behind. Opt-in; a safe, idempotent python merge into ~/.claude/settings.json.
+# FORGE_INSTALL_HOOK=1 to auto-yes, FORGE_SKIP_HOOK=1 to skip.
+SETTINGS="$HOME/.claude/settings.json"
+HOOK_CMD="zsh \"$REPO_DIR/scripts/forge-update-check.sh\""
+
+register_update_hook() {
+  python3 - "$SETTINGS" "$HOOK_CMD" <<'PY'
+import json, os, sys
+path, cmd = sys.argv[1], sys.argv[2]
+data = {}
+if os.path.exists(path):
+    try:
+        with open(path) as f: data = json.load(f)
+    except Exception:
+        print("skip (settings.json isn't valid JSON — add the hook manually)"); sys.exit(0)
+ss = data.setdefault("hooks", {}).setdefault("SessionStart", [])
+if any("forge-update-check" in h.get("command", "") for g in ss for h in g.get("hooks", [])):
+    print("exists"); sys.exit(0)
+ss.append({"hooks": [{"type": "command", "command": cmd}]})
+os.makedirs(os.path.dirname(path), exist_ok=True)
+with open(path, "w") as f: json.dump(data, f, indent=2)
+print("added")
+PY
+}
+
+echo
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "ℹ️  Skipping the update-nudge hook (needs python3). /forge-update still works anytime."
+elif [[ -n "$FORGE_SKIP_HOOK" ]]; then
+  echo "ℹ️  Skipping the update-nudge hook (FORGE_SKIP_HOOK set)."
+elif [[ -n "$FORGE_INSTALL_HOOK" ]] || { [[ -t 0 ]] && { printf "Add a SessionStart nudge when a Forge update is available? [Y/n] "; read -r r || r=""; [[ -z "$r" || "$r" == [Yy]* ]]; }; }; then
+  hook_result="$(register_update_hook)"
+  case "$hook_result" in
+    added)  echo "✅ Update nudge installed (SessionStart hook).";;
+    exists) echo "ℹ️  Update nudge already installed.";;
+    *)      echo "ℹ️  $hook_result";;
+  esac
+else
+  echo "ℹ️  Skipped the update nudge. /forge-update still works anytime."
+fi
+
 # ── Build engine: GSD (highly recommended) ────────────────────────────────────
 # Forge's Stage 2 (BUILD) is far better with GSD — it's the recommended build
 # engine, but NOT required: Forge falls back to a direct Claude Code build if

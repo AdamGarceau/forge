@@ -15,6 +15,7 @@ First self-updating release. Forge now carries a changelog and an in-place updat
 - **Stage 1 red-team swarm** for market candidates (skeptics by attack surface; surviving fixes applied back).
 - **Operating rule — validate the frame before spending; real-signal over simulation; founder-advantage input.** The moat lives in rare skill intersections, not in "uses AI" (leverage is not a moat).
 - **`/forge-update`, `VERSION`, and this changelog** — Forge can now update itself and tell you what changed.
+- **SessionStart update nudge** — `scripts/forge-update-check.sh` prints a one-line "update available" notice at session start when you're behind (throttled to one network fetch per day, silent on any failure). `install.sh` offers to register it as an opt-in hook.
 
 ### Fixed
 - Self-review pass (Forge run through Forge before release): resolved a contradiction between autonomous "never-ask" and the founder-fuel input (the profile is now captured at intake), fixed broken cross-references and a false artifact-sort claim, added missing mode-table and state-seed rows, wired the dangling audience-first branch, and cut ~15% bloat.
