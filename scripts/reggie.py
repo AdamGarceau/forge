@@ -15,6 +15,7 @@ Usage:
     python3 reggie.py --storyboard          # print the frames statically (design preview)
     python3 reggie.py --no-anim "..."       # static face + roast, no animation
     python3 reggie.py --face actually|bust "..."
+    python3 reggie.py --demo                # self-playing "Meet Reggie" sequence
 """
 import argparse
 import itertools
@@ -218,6 +219,8 @@ def main():
     ap.add_argument("--storyboard", action="store_true")
     ap.add_argument("--fire-reggie", action="store_true",
                      help="Try to fire Reggie. It will not go how you think.")
+    ap.add_argument("--demo", action="store_true",
+                     help="Self-playing 'Meet Reggie' sequence. Record your terminal running this.")
     args = ap.parse_args()
     face = FACES[args.face]
 
@@ -236,6 +239,10 @@ def main():
 
     if muted:
         return  # he's been muted. he knows. he's not saying anything. exit 0, silent.
+
+    if args.demo:
+        demo(face, args.speed)
+        return
 
     if args.storyboard:
         for m in ("shut", "open", "yell", "smug"):
