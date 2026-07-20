@@ -135,7 +135,7 @@ Forge doesn't reinvent the actual building. For that it leans on [GSD](https://g
 
 Picture it like this: GSD is a very good contractor. Forge is the part that makes sure you're building a house someone wants to live in, then walks through it afterward to check that the doors actually close.
 
-The installer offers to add GSD for you. Highly recommended, completely optional (Forge builds fine on its own), and not affiliated. They just get along.
+The installer offers to add GSD for you. Forge checks whether GSD is installed: if it is, Forge uses it as the build engine (the disciplined, resumable path — that's the default, not an option); if it isn't, Forge suggests it and offers to install it, and only builds by hand if you decline. Not affiliated — they just get along.
 
 ---
 

@@ -142,29 +142,41 @@ A MARKET verdict founded only on synthetic enthusiasm is forbidden — cap it at
 - **Two win paths, scored:** (a) better PRODUCT for the underserved segment; (b) higher-volume / better-aimed CONTENT in the niche (the niche-bend: same topic, bent to the audience the incumbents can't serve). Say which wins and why.
 - **Re-aimed idea:** if the verdict wasn't BUILD FOR MARKET, name the adjacent aim that WOULD clear the kill criteria — or say plainly none exists in this market. A DON'T BUILD or BUILD FOR SELF with a hot gap map is a successful run, not a failed one.
 
-## Stage 2 — BUILD (GSD strongly recommended)
+## Stage 2 — BUILD (GSD is the build engine)
 
-**GSD is Forge's recommended build engine — highly encouraged, not required.**
-When it's installed, Stage 2 IS a GSD run: Forge delegates wholesale to GSD
-(`/gsd-new-project` → `/gsd-plan-phase` → `/gsd-execute-phase` → `/gsd-verify-work`,
-or `/gsd-quick` for speed-runs). GSD gives the build durable `.planning/` state,
-atomic commits, and verification gates so any session can resume it cold — the
-discipline a non-coder founder needs. Forge's own contribution is the gates AROUND
-the build (Stages 0-1 in front, 3-5 behind).
+**FIRST, DETECT GSD — always check before building; don't assume either way.**
+Check whether GSD is installed: `command -v gsd-sdk` (or check that `~/.claude/get-shit-done/`
+exists / the `/gsd-*` commands resolve). The result picks the branch below.
 
-**If GSD isn't installed, don't stop — recommend it, then fall back gracefully:**
-- Offer to add it first (it's a public npm package):
-  `npx -y @opengsd/get-shit-done-redux@latest --global` (install.sh offers this too).
-  Encourage it — the durable-state + verification discipline is a real quality
-  difference, not a formality.
-- If the founder declines or it's unavailable, build directly with Claude Code while
-  keeping GSD's disciplines by hand: create the project dir, write a lightweight
-  `.planning/` (requirements from Stage 1 artifacts, a phase list, a STATE.md so a
-  future session resumes cold), commit atomically per feature, and verify each
-  feature runs before moving on. Stages 0-1 and 3-5 are unchanged.
+**If GSD IS installed → it is REQUIRED, not optional.** Stage 2 IS a GSD run: Forge
+delegates wholesale to GSD (`/gsd-new-project` → `/gsd-plan-phase` → `/gsd-execute-phase`
+→ `/gsd-verify-work`, or `/gsd-quick` for speed-runs). No inline / hand-rolled build when
+GSD is present. The **HARD GSD GATE** applies — all three checkable, logged in
+FORGE-STATE.md's Stage-2 checklist:
+1. **`.planning/ROADMAP.md` exists** for the project (verify: `gsd-sdk query init.quick "<task>"`
+   returns `"roadmap_exists": true`). If not, the FIRST Stage-2 action is `/gsd-new-project` —
+   or scaffold `.planning/` (PROJECT + ROADMAP + STATE + config.json) from the Stage-1 artifacts /
+   existing project docs — before any code edit.
+2. **The `/gsd-*` commands run are logged in FORGE-STATE.md** with their commit hashes. No logged
+   GSD command AND no `.planning/` = the build did not happen per-spec; redo it under GSD. Ad-hoc
+   edits outside a GSD plan are a gate FAILURE — **even in speed-run mode (speed-run means
+   `/gsd-quick`, never "skip GSD").**
+3. **The project is registered in your workspace registry** before the first GSD command.
 
-Never silently skip the build discipline because GSD is absent — degrade
-gracefully, don't disappear.
+**If GSD is NOT installed → do not skip it silently. Suggest it and OFFER TO INSTALL it:**
+`npx -y @opengsd/get-shit-done-redux@latest --global` (install.sh offers this too). Explain the
+durable `.planning/` state + atomic commits + verification gates are a real quality difference for
+a non-coder founder, not a formality. **Only if the founder declines**, fall back to the by-hand
+discipline: create the project dir, write a lightweight `.planning/` (requirements from Stage 1
+artifacts, a phase list, a STATE.md so a future session resumes cold), commit atomically per
+feature, and verify each feature runs before moving on. Stages 0-1 and 3-5 are unchanged.
+
+**PER-STAGE APPROVAL (interactive + speed-run modes; not autonomous Company-Builder mode).**
+Forge STOPS at each stage boundary and gets the founder's explicit go before starting the next
+stage — above all, it shows the GSD PLAN and waits for approval before any executor touches code.
+"Gated, interactive" means the founder actually approves each stage; never chain stages silently.
+
+Never silently skip the build discipline because GSD is absent — degrade gracefully, don't disappear.
 
 **Before building, read `references/deadreckon-session-patterns.md`** — the eight
 collaboration behaviors from the Deadreckon session (outcome-language translation,
