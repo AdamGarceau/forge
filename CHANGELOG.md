@@ -2,6 +2,19 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.2.0] — 2026-09-10
+
+Forge advances like GSD instead of stopping like a memo.
+
+### Added
+- **`forge-state`** (`scripts/forge_state.py`): the pipeline's machine state lives in YAML frontmatter at the top of `FORGE-STATE.md`, exactly like GSD's `.planning/STATE.md`. `next` prints the single next stage and exits 2 while a blocking gate is owed, 3 when a gate has FAILED and needs a decision. `gate` records every transition and refuses to pass a later stage while an earlier blocking one is unresolved; a waiver needs a reason. `scan` names any run idle a day or more with a gate owed (wire it into a session-start hook). `init` adds frontmatter to an existing prose manifest. Families for the sibling pipelines (gtm, yt, research, content, games) are registered in `FAMILIES`.
+- **Rule 14 — Forge does not stop.** STOP means exactly three things: a human-only input, an irreversible or outward-facing action, or a verdict that ends the run. Everything else is work, and Forge does the work. Every stage ends with a GSD-style paste-block.
+- **Stage 0A — intended-use intake (blocking).** Five questions before any research or verdict, because a wrong run mode silently deletes whole stages.
+
+### Changed
+- Stage 2's approval beat is now exactly one thing: show the GSD PLAN before an executor touches code. The 2026-07-20 wording ("Forge STOPS at each stage boundary") over-corrected into a run that waited a day for a go nobody knew it wanted.
+- Rule 5 ("gates block") now names its mechanism.
+
 ## [1.1.0] — 2026-07-09
 
 First self-updating release. Forge now carries a changelog and an in-place updater (`/forge-update`), and gained a full go-to-market front end.
