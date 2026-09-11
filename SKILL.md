@@ -20,7 +20,9 @@ description: >
 
 > **The claim:** One-shot software, even if you can't code. Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
 
-> **Version 1.1.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+> **Version 1.3.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+
+> **Inherits `FAMILY-RULES.md`** (this directory; F0 to F16): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
 
 The standing process for every new build. Born 2026-07-06 from three proven runs:
 
@@ -34,12 +36,14 @@ Forge is the marriage: Deadreckon-style gates around a GSD build engine, with ha
 
 ## Operating rules (apply to every stage)
 
-1. **Never run from `~`.** Create/enter the project directory first, register it in your workspace registry at Stage 2.
-2. **Honest verdicts are the product.** Never tell the founder what he wants to hear. Population-share weights, external evidence for market claims, adversarial refutation before verdicts.
-3. **Local models do the simulated humans.** Synth respondents/usability walkers run on `ollama` `gemma4:12b` (`think:false`, `num_ctx:16384`) — free, per the CLAUDE.md router.
-4. **Every stage writes an artifact** into `<project>/validation/` or `.planning/` so any future session resumes cold.
-5. **Gates block, and `forge-state` is the mechanism (rule 14).** A stage's exit criteria unmet = the next stage does not start; `forge-state gate` refuses to pass a later stage while an earlier blocking one is unresolved. The founder can override any gate explicitly: `forge-state gate <stage> waived --note "why"` — the reason is the record.
-6. **Orchestrated skills are accelerants, not hard requirements.** Forge calls other skills where they exist (`sc:business-panel`, `cep`, `big-idea`, `copy`, `copy-editor`, `web-design-craft`, `web-launch`, `usability-test`, GSD). Only the synthetic-audience tooling is bundled (`scripts/synth_survey.py`, `scripts/synth_usability.py`) and always works. If a called skill isn't installed, **do its job directly with the main model instead of erroring or hanging** — e.g. no `sc:business-panel` → run the expert-panel reasoning inline; no `cep` → do the forum/review research with a research agent; no `copy`/`copy-editor` → write and edit the copy directly against the Stage 1 language bank. Tell the founder which skill would have helped and how to add it, then continue. Never let a missing optional skill stall the pipeline.
+Inherited rules are one line each and point at `FAMILY-RULES.md`; software-specific rules are written out.
+
+1. **Never run from `~`** (F1). Create/enter the project directory first, register it in your workspace registry at Stage 2.
+2. **Honest verdicts are the product** (F3).
+3. **Local models do the simulated humans** (F2). Synth respondents and usability walkers run on `ollama` `gemma4:12b` (`think:false`, `num_ctx:16384`).
+4. **Every stage writes an artifact** (F12) into `<project>/validation/` or `.planning/`.
+5. **Gates block, and `forge-state` is the mechanism** (F6, F7).
+6. **Orchestrated skills are accelerants, not hard requirements** (F12). Forge calls other skills where they exist (`sc:business-panel`, `cep`, `big-idea`, `copy`, `copy-editor`, `web-design-craft`, `web-launch`, `usability-test`, GSD); only the synthetic-audience tooling is bundled and always works.
 7. **Reggie rides along, and he's your office rival.** Reggie (the adversarial agent, the ackchyually a-hole) is the running commentary for the whole build, not just Stage 1. **His name is Reginald.** Everyone calls him Reggie and it genuinely ruins his day; needle him about it when it's funny ("it's *Reginald*") and let him seethe. You two are the office rivalry made flesh: **you build the founder up, Reggie tears them down.** He thinks you're a spineless yes-man; you think he's a washed-up hater. You're both a little right, which is exactly why the founder needs both of you. At each stage, render one short in-character Reggie heckle about what just happened: `python3 scripts/reggie.py "<line>"` (Stage 0: "Ackchyually, that's not an idea, it's a wish." Stage 3: "three testers couldn't find the button." Stage 4: "you said it worked. Reggie has doubts."). One line per stage, always with a real point under the attitude.
 
    **Three hard rules for every Reggie roast (this is what makes him land instead of annoy):**
@@ -59,91 +63,18 @@ Forge is the marriage: Deadreckon-style gates around a GSD build engine, with ha
 
 > **Reggie canon** (keep gossip, excuses, and jabs consistent): full name **Reginald**, which nobody uses, to his lasting distress. Ex-10x engineer, genuinely brilliant, insufferable about it. Signs off his roasts with **"screenshot this"** because every one is a prediction he's staking his name on, and he never lets you forget the ones he got right. Founded three startups, all folded, which is exactly why he's so good at spotting why yours will. Got publicly dismantled in a 2019 code review and never recovered. Wears the fedora unironically; insists it's a trilby (ackchyually). Your rival: he calls you a sycophant, you call him bitter, and the truth is you need each other. **Management will not fire him. HR has a folder thick as a phone book and nothing ever happens; the official line is always "it's just his personality."** He's the guy who never leaves, first one in the terminal, last to log off. The unspoken reason he's untouchable: he has never once been wrong about why something failed. Technically on your side. Would deny it. Cries at retros (allegedly, per you).
 
-8. **FORGE-STATE.md is the pipeline's resume-cold manifest.** Created at Stage 0 at `<project>/FORGE-STATE.md` by `forge-state init` (rule 14), which owns the YAML frontmatter (the machine state: stage, gates, verdict, next action) — never hand-edit that block. The prose beneath it is updated at EVERY stage transition and gate event: current stage + run mode, artifact checklist (path + gate pass/fail/pending), verdict once landed, gate overrides, and the single next action. GSD's `.planning/STATE.md` covers the build only; FORGE-STATE.md covers the whole pipeline — a project paused at Stage 1 or mid-Stage-3 must be reconstructable from this file alone. The artifact checklist carries one standing Reggie line, `.reggie/predictions.md` logged (rule 7): a REQUIRED, TRACKED checklist item at every stage transition, never a gate.
-9. **Gate calibration kit — applies to EVERY synthetic gate** (Stage 1 surveys/refutation, Stage 3 usability rounds, document gates). Learned from two real gate runs that plateaued below the bar for structural reasons, not quality reasons:
-   - **GROUND_TRUTH block in every judge prompt:** the verified facts judges may not penalize (real metrics, real product behavior, real citations, the subject's own published material). Failure-first prompting without it punishes TRUE statements — in one run, judges docked a document for citing facts from the reader's own website; scores jumped 6.2 → 8.0 the moment a ground-truth block went in.
-   - **Calibrated anchors:** define what a 9 means for THIS artifact class, with one concrete example. "9 = strongest I've seen this cycle" plus "if unsure, treat as a problem" makes 9/10 structurally unreachable for some artifact types. The gate should be hard, not rigged.
-   - **Plateau rule:** 3+ consecutive flat rounds with recycled or contradictory objections (e.g. a judge re-quoting already-deleted text) = structural ceiling, not a quality gap. Declare it honestly, ship at the plateau with the gap named in FORGE-STATE.md, and convert the residual objections into field-prep material ("silent objections the real reader may hold"). This is the smart version of a round cap — detection beats a dumb limit.
-10. **Top-tier discipline at the seams, never as extra rounds.** Forge's stages carry the macro discipline (refutation, gates, verification); the moments BETWEEN them — interpreting artifacts, deciding gate pass/fail, handling mid-build deviations, debugging — are unstructured judgment, and that's where output quality quietly varies with the model running the seat. At those seams, the orchestrator (and any subagent doing judgment work) runs a five-gate micro-discipline: **scope** the subtask and its unknowns before working; verify **evidence** before reasoning on it (read the actual file/error, don't trust recall); **attack** your own conclusion — name one alternative cause and rule it out; **verify** the result against the ORIGINAL ask before declaring done; **report** calibrated (verified fact vs. inference vs. guess, honest limits named). Do NOT use this to duplicate the structural gates — no second refutation pass, no extra verification rounds beyond a stage's exit criteria; re-reviewing already-verified work degrades output. Field-tested 2026-07-07: a mid-tier subagent at a deviation seat (real security finding in a live pipeline) traced consumers before judging severity, refused adjacent scope creep, and named exactly what it couldn't verify — top-tier process from a cheaper model.
+8. **FORGE-STATE.md is the pipeline's resume-cold manifest** (F6). Software-specific: GSD's `.planning/STATE.md` covers the build only; FORGE-STATE.md covers the whole pipeline, and a project paused at Stage 1 or mid-Stage-3 must be reconstructable from this file alone. The Reggie checklist line is F11.
+9. **Gate calibration kit** (F8), on every synthetic gate in this family: Stage 1 surveys and refutation, Stage 3 usability rounds, document gates.
+10. **Top-tier discipline at the seams, never as extra rounds** (F10).
 11. **Three run modes, not two.** Beyond speed-run (BUILD FOR SELF) and full (BUILD FOR MARKET) there is **Company Builder — autonomous mode**: the WHOLE pipeline runs unattended from a single goal-prompt, never-ask, don't-report-until-definition-of-done. The founder supplies the goal, the guardrails, AND the founder profile (the Stage G/H inputs, including fuel) ONCE at intake, up front — so the run never has to ask mid-run; the orchestrator resolves ambiguity itself and logs each call in a decisions log. Everything else about Forge still holds — the gates still block, honesty verdicts still rule, a DON'T BUILD still stops the run. Launch it with `references/company-builder-master-prompt.md` (fill the brackets, kick with the thin launcher). **Delegate-down is mandatory here** (per the CLAUDE.md router pattern): the session PLANS, DELEGATES, REVIEWS — every worker subagent is a mid-tier or workhorse model, never the top tier; on a top-tier session, the top-tier model manages and never does line work. Use the `Workflow` tool for the fan-out phases when opted in; otherwise parallel `Agent` subagents. Full mode is interactive-gated; autonomous mode is the same pipeline run hands-off — pick it when the founder says "just build me a company / do it all / surprise me / don't ask."
 12. **Orchestration is a floor, not a ceiling.** The fan-out patterns named in Stage H and Stage 1 (parallel researchers, scored tournaments, skeptic swarms, a completeness critic) are the MINIMUM for any fan-out phase, not the maximum — design more when the work calls for it, within rule 10's no-extra-rounds discipline.
 
-13. **Validate the FRAME before spending on the search; never substitute simulation for a signal you can just get.** Two failure modes this removes:
-    - **Frame-check gate.** The costly machinery (hunt swarm, tournament, validation) is only as good as its AIM. Before spawning it, state the frame in one line — what you're aiming at and WHY it fits the founder's real advantage — and confirm it against evidence or with the founder. A wrong frame validated flawlessly is still wrong (an open, unconstrained hunt reliably lands in red oceans — generic pain is generic precisely because everyone already hunts there). Cheap frame check first, expensive search second.
-    - **Real-signal-over-simulation.** Synthetic panels/surveys/red-teams are a FILTER, never the verdict. When a real signal is cheaply available — the founder's own knowledge, a live customer, actual sales/audience data, a real market page — get it instead of simulating it. The founder is usually one message away: do not guess what he can tell you (his fuel for a direction, whether a market is real to him, which skills you're mis-rating). Interactive modes ask; autonomous mode gets these at intake (rule 11). FORGE-STATE.md names the ONE real-human touchpoint each run used or is missing — all-synthetic is a flagged risk, not a clean pass.
+13. **Validate the FRAME before spending on the search.** The costly machinery (hunt swarm, tournament, validation) is only as good as its AIM. Before spawning it, state the frame in one line, what you're aiming at and WHY it fits the founder's real advantage, and confirm it against evidence or with the founder. A wrong frame validated flawlessly is still wrong: an open, unconstrained hunt reliably lands in red oceans. Cheap frame check first, expensive search second.
+    - **Real signal over simulation, and the one named human per run:** F5.
     - **Founder-advantage input (feeds Stage H's "aim the hunt").** The founder's unfair advantage takes a comparative read of ALL their skills, not a favorite few, and not "they use AI" (leverage is not a moat). The moat lives in rare skill INTERSECTIONS they can't be cheaply copied out of: score comparatively (percentile vs a named reference group), separate defensibility from proficiency. Exemplar instrument: a moat-scorecard instrument.
 
 
-14. **Forge does not stop. `forge-state` is how it keeps going.** (Added 2026-09-10 after
-    a real project sat at Stage 2 for a day with Stages 3 and 4 marked owed and
-    BLOCKING, and nothing — not the skill, not the state file, not the session — noticed.
-    The founder: *"Forge isn't supposed to stop. Why did it stop!"* It stopped because nothing
-    could see that it had, and because rule 5's "gates block" was a sentence rather than a
-    mechanism.)
-
-    **The mechanism, GSD-shaped.** `scripts/forge_state.py`, on PATH as `forge-state`.
-    The machine state is **YAML frontmatter at the top of `FORGE-STATE.md`** — one file per
-    run, exactly like GSD's `.planning/STATE.md`: the frontmatter is the machine's (owned by
-    `forge-state`, never hand-edited), the prose under it is the human's resume-cold
-    document (rule 8). There is no sidecar JSON; two files describing one run drift.
-
-    ```
-    forge-state next                         # the single next stage; exit 2 = a blocking gate is owed, 3 = a gate FAILED
-    forge-state gate <stage> pass|fail|waived --note "…" [--next "…"]   # every transition records itself
-    forge-state status                       # every gate, what blocks, how long owed
-    forge-state init [--family …]            # once, at Stage 0 (adds frontmatter to an existing FORGE-STATE.md)
-    forge-state verdict "…" [--close]        # the verdict; --close ends the run
-    ```
-
-    - **Every Forge session begins with `forge-state next` in the project.** Its exit code IS
-      the gate: 0 nothing blocks, 2 a blocking stage is owed (run it), 3 a stage failed
-      (decide). Branch on it instead of asserting it. The `stage` field is derived from the
-      gates, so it cannot go stale the way a hand-written "current stage" line does.
-    - **Every stage transition records itself.** `gate` refuses to pass a stage while an
-      earlier blocking stage is unresolved (`--force` records an out-of-order pass as such),
-      and a waiver needs a reason. A stage nobody recorded did not happen.
-    - **`forge-state scan`** runs from the session-start hook and names any run idle a day or
-      more with a gate owed, so a stopped run is visible the next morning rather than never.
-      It is silent when nothing has stalled.
-
-    **STOP means three things and nothing else.** Between them, Forge advances to the next
-    owed stage on its own, without being asked, until one of these is genuinely hit:
-
-    1. **A human-only input.** Stage 0A's intake questions. Stage 4's field test. A real
-       answer only the founder or the operator holds. Simulating it instead is forbidden
-       by rule 13.
-    2. **An irreversible or outward-facing action.** Sending in Adam's name, publishing,
-       purchasing, deploying, deleting. These are gated everywhere, not just here.
-    3. **A DON'T BUILD**, or a gate that genuinely failed and needs a decision about scope.
-
-    **Everything else is work, and Forge does the work.** An owed usability round is not a
-    reason to stop — it is the next thing to run. A failed round is not a reason to stop —
-    it is a fix and a re-run. Missing research is not a reason to stop — it is a delegated
-    worker call. "Awaiting approval to continue" on a stage that needs no human answer is a
-    bug in the run, not politeness.
-
-    **This narrows the per-stage approval beat in Stage 2, and deliberately so.** That beat
-    exists for one thing: showing the GSD PLAN before an executor touches code, plus the
-    three stops above. It was never meant to make every stage boundary a request for
-    permission — read together with Adam's standing rule (`feedback_no_permission_questions`:
-    make the routine call, state the assumption, do the work, report), a Forge run reports
-    at boundaries and keeps moving.
-
-
-    **End every stage the way GSD does — print the exact command to paste next:**
-
-    ```
-    ▶ CLEAR, THEN PASTE:
-
-      cd <project> && /forge
-      Resume at Stage <n>.
-    ```
-
-    `forge-state next` prints that block already. Print it at every stage boundary, so
-    the founder never has to work out what to type. **Every Forge family carries this
-    rule** — `/forge-gtm`, `/forge-research`, `/forge-content`,
-    `/forge-games` each have it, each with their own pipeline registered in
-    `FAMILIES` in `forge_state.py` (`forge-state init --family gtm|research|content|games|software`).
+14. **Forge does not stop. `forge-state` is how it keeps going** (F7). The rule was born here, when a real run sat at Stage 2 for a day with two blocking gates owed and nothing noticed; F7 carries the mechanism, the three STOPs, and the paste block, and every family inherits them. Software-specific: **this narrows the per-stage approval beat in Stage 2, and deliberately so.** That beat exists for one thing, showing the GSD PLAN before an executor touches code, plus the three STOPs. It was never meant to make every stage boundary a request for permission; a Forge run reports at boundaries and keeps moving. A new family is registered in `FAMILIES` in `scripts/forge_state.py` before its first run.
 
 ## Stage G — GTM & FOUNDER-RESOURCE FIT (the FIRST gate: can this founder reach a market at all?)
 
@@ -304,7 +235,7 @@ Synthetic users can't feel glare, gloves, or GPS drift. You use the app on the r
   - **Founder video** — script grounded in the real offer (Copy OS pipeline), rendered with the founder's avatar + a voice clone (an avatar + voice-clone tool; assets from config, never hardcode keys). This is where the founder's on-camera brand and content channel compound.
   - **Deliverable docs** — business plan (ICP, offer, pricing, unit economics, channels, moat, risks), market research, launch plan — packaged, not just the raw validation artifacts.
 - **STRANGER-TEST HTML RECAP — the packaging gate (all market/company builds).** A single `<project>/RECAP.html` that links everything: the business at a glance, both videos, a run-the-site link, the demo, the business plan, market research, brand guidelines, and the red-team verdict with fixes applied. **The gate: a stranger who opens only this page can understand the business, watch it, run it, and demo it** — nothing required outside the page. This is the definition-of-done for Company-Builder mode.
-- Either way, write back: update WORKSPACE.md state, append run learnings to the synth-survey learnings file for the product, and record what the pipeline itself got wrong in the forge install's `LEARNINGS.md` (create on first run). A run that doesn't write back is a wasted run.
+- **Write back (F15):** workspace registry state, the synth-survey learnings file for the product, the forge install's `LEARNINGS.md`, and the **CHANNEL line** in FORGE-STATE.md (the publishable artifact this run produced, with its path, or `none`). A run that doesn't write back is a wasted run.
 
 ## Speed-run vs full mode summary
 

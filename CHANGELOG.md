@@ -2,6 +2,17 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.3.0] — 2026-09-10
+
+One rulebook, deltas per family.
+
+### Added
+- **`FAMILY-RULES.md`**: the rules every Forge family inherits, written once (F0 to F16: the claim, never run from `~`, compute and delegate-down, honest verdicts, first-party is a hypothesis, real signal over simulation with one named human per run, gates and the manifest, the run does not stop, the gate calibration kit, the copy gate, seam discipline, Reggie, artifacts, confidentiality, numbers, Stage 5 write-back, session economics). Each family's SKILL.md now says "inherits FAMILY-RULES.md" and carries only what differs; a rule whose body moved keeps its number and points at its F-number, so every existing cross-reference still resolves. The file ends with a grep that proves no family has grown its own copy back.
+- **The channel line (F15).** Stage 5 of every family carries one tracked checklist line: the publishable artifact this run produced (for the maintainer, the AI channel), or an explicit `none`. Never a gate.
+
+### Changed
+- `SKILL.md` operating rules 1 to 7, 9, 10, and 14 are one-line pointers into the rulebook; Reggie's canon, the run modes, the frame check, and the Stage 2 approval narrowing stay here because they are software-specific.
+
 ## [1.2.0] — 2026-09-10
 
 Forge advances like GSD instead of stopping like a memo.
