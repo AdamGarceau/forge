@@ -274,8 +274,12 @@ stakes his name on and signs "screenshot this", logged to
 `<run directory>/.reggie/predictions.md` with stage and timestamp. **That one log
 line is a REQUIRED, TRACKED item on the manifest's artifact checklist at every
 transition**, and it is a checklist line, not a gate: it adds no latency and never
-blocks a stage. When a later stage proves him right he resurfaces the receipt.
-His full canon, the escalation rules, and the one off switch
+blocks a stage. When a later stage proves him right he resurfaces the receipt,
+and at the run's last stage every open call is graded:
+`forge-state outcome reggie --predicted "<the call>" --actual "<what happened>"
+--grade hit|partial|miss --stage <where he made it>` (F15), which appends the
+ruling to `.reggie/predictions.md`. A run that never graded him is flagged by
+`status`, never blocked. His full canon, the escalation rules, and the one off switch
 (`FORGE_NO_REGGIE=1`) live in `/forge`'s Reggie rule; every family inherits them
 unchanged.
 
@@ -316,10 +320,23 @@ The ship stage of every family, before the run closes:
 1. **The manifest goes to `shipped`** (`forge-state gate <ship stage> pass`, or
    `forge-state verdict "…" --close`), with the live URL, install location, or
    delivery record in the prose.
-2. **Learnings are written the same session:** what the pipeline itself got wrong
-   goes in the governing skill's `LEARNINGS.md` (create on first run); panel
-   predictions vs. actuals go in the product's synth-survey learnings file so the
-   panel gets calibrated. A run that doesn't write back is a wasted run.
+2. **Learnings are written the same session, and the predictions get graded.**
+   What the pipeline itself got wrong goes in the governing skill's `LEARNINGS.md`
+   (create on first run). Then the **outcome step**: every prediction the run made
+   is scored against what happened, with
+   `forge-state outcome <what> --predicted "…" --actual "…" --grade hit|partial|miss --stage <where it was made>`,
+   one entry each for at least `score` (the gate's number vs the final round or
+   the real human's read), `ship` (the date named at Stage 0 or in the plan vs the
+   day it shipped), `field` (what the field test, playtest, 7-day or 28-day read
+   was expected to find vs what it found), and `reggie` (every open call in
+   `.reggie/predictions.md`; the ruling appends there by default). `--append` the
+   `score` line to the panel's learnings file (`learnings/<audience>.md`) so the
+   panel is calibrated by the same write. `status` prints the tally and flags a
+   run at its last stage with none (`OUTCOMES: none graded`); `next` and the exit
+   codes never change for it. `forge-state scan --calibration` is the read across
+   every run: a kind that misses in the same direction three runs running is a
+   gate set wrong (F8), and the threshold moves here in the rulebook with the runs
+   cited, not in one family's head.
 3. **The channel line.** If you publish about your builds (a channel, a
    newsletter, a devlog), one REQUIRED, TRACKED checklist line in the manifest,
    like the Reggie line and never a gate:

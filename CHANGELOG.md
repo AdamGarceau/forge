@@ -2,6 +2,19 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.7.0] — 2026-09-11
+
+The predictions get graded. Reggie wrote one at every stage and every gate scored every artifact; nobody scored either, so the gates stayed where they were first set.
+
+### Added
+- **`forge-state outcome <what> --predicted "…" --actual "…" --grade hit|partial|miss [--stage] [--when] [--note] [--append <file>]`** appends an entry to an `outcomes:` list in the manifest frontmatter (F15). The vocabulary is `score`, `ship`, `field`, `reggie`; any short label is accepted. `--stage` is the stage the prediction was MADE at (default: current). Empty `--predicted` or `--actual` is refused: if nothing was predicted there is nothing to grade. `--append` writes one line to a file (a panel's learnings file); `reggie` defaults to `.reggie/predictions.md` when it exists, so the ruling lands where the call was made.
+- **`forge-state status`** prints the tally (`OUTCOMES: 3 hit · 1 partial · 1 miss`) and one line per entry under the human entries. A run at its last stage with none prints `OUTCOMES: none graded` in the same style as BLOCKING. Flagged, never blocked: `next` and its exit codes are unchanged. `next` on a complete run and `verdict --close` each add one reminder line when nothing was graded.
+- **`forge-state scan --calibration`** tallies every graded prediction across every run by family and kind, and lists what was not a hit. This is the read that moves a gate threshold (F8). `scan --verbose` adds one line counting runs at their last stage with nothing graded; the plain scan is unchanged.
+
+### Changed
+- `FAMILY-RULES.md` F15 item 2 is the outcome step; F11 names how Reggie gets graded. `init`'s body template carries a "Graded predictions" pointer at the field.
+- `SKILL.md` Stage 5 names the four outcomes for a software run.
+
 ## [1.6.0] — 2026-09-11
 
 The persona library: panels are loaded and extended, never rebuilt per run.

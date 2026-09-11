@@ -16,7 +16,9 @@ This does the same thing GSD does, for every Forge family:
     forge-state next     the single next action; exit code says whether a gate blocks
     forge-state gate     records a transition (and refuses out-of-order passes)
     forge-state human    records the named real-human touchpoint (F5); status flags a run with none
-    forge-state scan     every run that has gone idle with a gate owed (session-start hook)
+    forge-state outcome  grades a prediction against its actual (F15); status flags a closing run with none
+    forge-state scan     every run that has gone idle with a gate owed (session-start hook);
+                         --calibration tallies every graded prediction across every run
 
 The manifest is whatever the family already calls its resume-cold document:
 FORGE-STATE.md (software, games), LAUNCH-STATE.md (gtm, either lens),
@@ -321,6 +323,16 @@ Recorded in the frontmatter `human:` list, never here by hand:
 `forge-state status` prints every entry; a run with none is flagged
 "HUMAN: none yet, all-synthetic" (F5: flagged, not blocked).
 
+## Graded predictions
+
+Recorded in the frontmatter `outcomes:` list, never here by hand, at the
+family's last stage (F15):
+`forge-state outcome <score|ship|field|reggie> --predicted "…" --actual "…" --grade hit|partial|miss [--append <file>]`.
+`forge-state status` prints the tally; a run at its last stage with none is
+flagged "OUTCOMES: none graded" (flagged, not blocked). `forge-state scan
+--calibration` reads them across every run, which is how a gate threshold earns
+a change.
+
 ## Compute split
 
 local / NAS / agy / Sonnet / Opus:
@@ -393,6 +405,98 @@ def past_stage_one(st):
     return st["gates"].get("1", {}).get("state", "pending") in RESOLVED
 
 
+# --------------------------------------------------------------------------
+# Outcomes (F15): a prediction graded against what actually happened. Reggie
+# writes one at every stage and the gates score every artifact; nobody graded
+# either until this existed. A list in the frontmatter, like `human`.
+# --------------------------------------------------------------------------
+GRADES = ("hit", "partial", "miss")
+OUTCOME_KINDS = ("score", "ship", "field", "reggie")   # the vocabulary; free text is allowed
+
+
+def outcomes(st):
+    o = st.get("outcomes")
+    return o if isinstance(o, list) else []
+
+
+def last_stage(st):
+    return family(st)["order"][-1]
+
+
+def at_last_stage(st):
+    """True once every stage before the family's last one is resolved: the run is closing."""
+    return derive_stage(st) in (last_stage(st), "DONE")
+
+
+def outcome_text(o):
+    return "%s · %s · stage %s · predicted %s → actual %s%s" % (
+        str(o.get("grade", "?")).upper(), o.get("what", "?"), o.get("stage", "?"),
+        o.get("predicted", "?"), o.get("actual", "?"),
+        "  (%s)" % o["note"] if o.get("note") else "")
+
+
+def outcome_tally(os_):
+    return {g: sum(1 for o in os_ if o.get("grade") == g) for g in GRADES}
+
+
+def outcome_lines(st):
+    """status lines for the outcomes field: a tally and one line per entry, or the F15 flag."""
+    os_ = outcomes(st)
+    if not os_:
+        if at_last_stage(st):
+            return ["  ⚠️  OUTCOMES: none graded  ← F15: flagged, not blocked. Grade one: "
+                    "forge-state outcome score --predicted \"…\" --actual \"…\" --grade hit|partial|miss"]
+        return []
+    t = outcome_tally(os_)
+    out = ["  🎯  OUTCOMES: %d hit · %d partial · %d miss" % (t["hit"], t["partial"], t["miss"])]
+    for o in os_:
+        out.append("        %s" % outcome_text(o))
+    return out
+
+
+def cmd_outcome(root, st, body, path, args):
+    f = family(st)
+    if args.stage and args.stage not in st["gates"]:
+        sys.exit("unknown stage %r for %s (expected one of %s)"
+                 % (args.stage, f["cmd"], ", ".join(f["order"])))
+    if not args.predicted.strip() or not args.actual.strip():
+        sys.exit("--predicted and --actual are the record. Empty is not an outcome; "
+                 "if nothing was predicted there is nothing to grade.")
+    entry = {"what": args.what, "predicted": args.predicted.strip(), "actual": args.actual.strip(),
+             "grade": args.grade, "when": args.when or today()}
+    if args.stage:
+        entry["stage"] = args.stage
+    else:
+        cur = derive_stage(st)
+        entry["stage"] = last_stage(st) if cur == "DONE" else cur
+    if args.note:
+        entry["note"] = args.note
+    os_ = outcomes(st)
+    os_.append(entry)
+    st["outcomes"] = os_
+    save(root, st, body, path)
+    print("outcome %d graded: %s" % (len(os_), outcome_text(entry)))
+
+    # The ruling goes where the prediction lives: Reggie's ledger by default,
+    # a panel's learnings file when asked. One line, appended, never rewritten.
+    dest = args.append
+    if not dest and args.what == "reggie":
+        cand = os.path.join(root, ".reggie", "predictions.md")
+        if os.path.exists(cand):
+            dest = cand
+    if dest:
+        dest = dest if os.path.isabs(dest) else os.path.join(root, dest)
+        line = "- %s | %s | %s | %s | stage %s | predicted: %s | actual: %s%s\n" % (
+            entry["when"], st.get("project", os.path.basename(root)), entry["what"],
+            entry["grade"].upper(), entry["stage"], entry["predicted"], entry["actual"],
+            " | " + entry["note"] if entry.get("note") else "")
+        with open(dest, "a", encoding="utf-8") as fh:
+            fh.write(line)
+        home = os.path.expanduser("~")
+        print("appended to %s" % ("~" + dest[len(home):] if dest.startswith(home) else dest))
+    return 0
+
+
 def cmd_human(root, st, body, path, args):
     f = family(st)
     if args.stage and args.stage not in st["gates"]:
@@ -439,6 +543,8 @@ def cmd_status(root, st, body, path, args):
     print()
     for line in human_lines(st):
         print(line)
+    for line in outcome_lines(st):
+        print(line)
     o, fl = owed(st), failed(st)
     print("\n%d blocking gate%s outstanding%s." % (
         len(o), "" if len(o) == 1 else "s", ", %d FAILED" % len(fl) if fl else ""))
@@ -477,6 +583,9 @@ def cmd_next(root, st, body, path, args):
         return 2 if owed(st) else 0
     print("RUN COMPLETE — every stage resolved. Verdict: %s" % (st.get("verdict") or "(none recorded)"))
     print("Write the learnings back (skill LEARNINGS.md + ~/maax/context/learnings.md) if not done.")
+    if not outcomes(st):
+        print("No prediction graded (F15): forge-state outcome score|ship|field|reggie "
+              "--predicted \"…\" --actual \"…\" --grade hit|partial|miss")
     return 0
 
 
@@ -531,6 +640,9 @@ def cmd_verdict(root, st, body, path, args):
         st["next_action"] = "Run ended (%s). Write back learnings." % args.text
     save(root, st, body, path)
     print("verdict: %s%s" % (args.text, "  (remaining stages marked n/a)" if args.close else ""))
+    if args.close and not outcomes(st):
+        print("No prediction graded (F15): a closed run with nothing scored teaches the gates nothing. "
+              "forge-state outcome … before you leave.")
     return 0
 
 
@@ -599,7 +711,7 @@ def find_manifests(home, maxdepth=5):
 
 def cmd_scan(root, st, body, path, args):
     home = os.path.expanduser("~")
-    stalled, active, legacy, synthetic = [], [], [], []
+    stalled, active, legacy, synthetic, ungraded, graded = [], [], [], [], [], []
     for mp in find_manifests(home):
         d = os.path.dirname(mp)
         s, _, _ = load(d)
@@ -612,6 +724,10 @@ def cmd_scan(root, st, body, path, args):
         idle = age_days(s.get("updated"))
         if past_stage_one(s) and not humans(s):
             synthetic.append(rel)
+        if at_last_stage(s) and not outcomes(s):
+            ungraded.append(rel)
+        for oc in outcomes(s):
+            graded.append((f["name"], s.get("project", os.path.basename(d)), oc))
         if fl:
             k = fl[0][0]
             stalled.append("FORGE: %s — Stage %s (%s) FAILED, decision owed → cd %s && forge-state next"
@@ -624,6 +740,8 @@ def cmd_scan(root, st, body, path, args):
             active.append("%s: Stage %s owed, touched today" % (rel, o[0][0]))
         else:
             active.append("%s: nothing blocking (stage %s)" % (rel, derive_stage(s)))
+    if args.calibration:
+        return print_calibration(graded)
     for line in stalled:
         print(line)
     if args.all:
@@ -636,7 +754,36 @@ def cmd_scan(root, st, body, path, args):
     if args.verbose and synthetic:
         print("FORGE: %d run%s past Stage 1 with no human touchpoint (F5, all-synthetic): %s"
               % (len(synthetic), "" if len(synthetic) == 1 else "s", ", ".join(synthetic)))
+    if args.verbose and ungraded:
+        print("FORGE: %d run%s at the last stage with no prediction graded (F15): %s"
+              % (len(ungraded), "" if len(ungraded) == 1 else "s", ", ".join(ungraded)))
     return 2 if stalled else 0
+
+
+def print_calibration(graded):
+    """Every graded prediction on the machine, tallied by family and kind. This is
+    the read that moves a gate threshold (F8): a kind that misses the same way
+    three runs running is a gate set wrong, not three unlucky runs."""
+    if not graded:
+        print("FORGE calibration: no graded predictions yet. "
+              "forge-state outcome … at the last stage of a run writes the first one.")
+        return 0
+    rows = {}
+    for fam, proj, oc in graded:
+        rows.setdefault((fam, oc.get("what", "?")), []).append((proj, oc))
+    runs = len({p for _, p, _ in graded})
+    print("FORGE calibration: %d graded prediction%s across %d run%s"
+          % (len(graded), "" if len(graded) == 1 else "s", runs, "" if runs == 1 else "s"))
+    print("  %-10s %-10s %4s %8s %5s %4s" % ("family", "what", "hit", "partial", "miss", "n"))
+    for (fam, what), items in sorted(rows.items()):
+        t = outcome_tally([oc for _, oc in items])
+        print("  %-10s %-10s %4d %8d %5d %4d" % (fam, what, t["hit"], t["partial"], t["miss"], len(items)))
+    misses = [(p, oc) for _, p, oc in graded if oc.get("grade") != "hit"]
+    if misses:
+        print("  not a hit:")
+        for p, oc in misses:
+            print("    %s: %s" % (p, outcome_text(oc)))
+    return 0
 
 
 def main():
@@ -657,6 +804,16 @@ def main():
     h.add_argument("--how", required=True, help="the channel: in person, phone, text, email, recording")
     h.add_argument("--said", required=True, help="the verbatim, or the path to it")
     h.add_argument("--stage", default="", help="which stage the read belongs to (default: current)")
+    oc = sub.add_parser("outcome", help="grade a prediction against its actual (F15); a run records several")
+    oc.add_argument("what", help="what was predicted: score | ship | field | reggie (or any short label)")
+    oc.add_argument("--predicted", required=True, help="the prediction, as written at the time")
+    oc.add_argument("--actual", required=True, help="what actually happened")
+    oc.add_argument("--grade", required=True, choices=GRADES)
+    oc.add_argument("--stage", default="", help="the stage the prediction was MADE at (default: current)")
+    oc.add_argument("--when", default="", help="YYYY-MM-DD (default: today)")
+    oc.add_argument("--note", default="", help="one line: why it missed, or what it teaches the gate")
+    oc.add_argument("--append", default="", help="also append one line to this file "
+                    "(a panel's learnings file; `reggie` defaults to .reggie/predictions.md)")
     n = sub.add_parser("set-next", help="set the single next action")
     n.add_argument("text")
     v = sub.add_parser("verdict", help="record the verdict")
@@ -669,6 +826,8 @@ def main():
     sc.add_argument("--all", action="store_true", help="also list active and legacy runs")
     sc.add_argument("--days", type=int, default=1, help="idle days before a run counts as stalled")
     sc.add_argument("--verbose", action="store_true", help="print a line even when nothing stalled")
+    sc.add_argument("--calibration", action="store_true",
+                    help="tally every graded prediction across every run, by family and kind")
     args = ap.parse_args()
 
     root = os.path.abspath(args.root)
@@ -688,7 +847,8 @@ def main():
                  % (root, " (prose-only %s found)" % os.path.basename(path) if path else "",
                     "|".join(sorted(FAMILIES))))
     return {"status": cmd_status, "next": cmd_next, "gate": cmd_gate, "human": cmd_human,
-            "set-next": cmd_set_next, "verdict": cmd_verdict}[cmd](root, st, body, path, args)
+            "outcome": cmd_outcome, "set-next": cmd_set_next,
+            "verdict": cmd_verdict}[cmd](root, st, body, path, args)
 
 
 if __name__ == "__main__":
