@@ -7,3 +7,9 @@ __pycache__/
 *.pyc
 
 validation/panel-outputs/
+
+# personal ops docs and working notes, not the product
+ENGINE-DECISION.md
+HYBRID-ENGINE.md
+ideas/
+research/
