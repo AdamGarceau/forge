@@ -109,6 +109,14 @@ FAMILIES = {
         ("5", "Launch, money step first",           True),
         ("6", "Measure at 28 days",                 True),
     ]),
+    "client": ("/forge-client", "CLIENT-STATE.md", [
+        ("0", "Discovery and the money step",        True),
+        ("1", "Proposal, two-sided, signed, paid",   True),
+        ("2", "Shoot and edit spec, shoot, cut",     True),
+        ("3", "Delivery, capped",                    True),
+        ("4", "Invoice, then paid",                  True),
+        ("5", "Testimonial, case study, write-back", False),
+    ]),
 }
 MANIFESTS = sorted({v[1] for v in FAMILIES.values()})
 RESOLVED = ("pass", "waived", "n/a")          # counts as done

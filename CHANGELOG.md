@@ -2,6 +2,11 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.3.2] — 2026-09-10
+
+### Added
+- **The `client` family** registered in `FAMILIES` in `scripts/forge_state.py` and in the family table of `FAMILY-RULES.md`: `/forge-client`, manifest `CLIENT-STATE.md`, run directory `<clients root>/<slug>`, six stages (discovery and the money step; proposal gated two-sided with an in-house veto, then signed and paid; shoot and edit spec, the shoot, the cut; delivery under a revision cap; invoice, then paid; testimonial, case study, write-back). The claim: one-shot paid client work, even if you've never run an agency. The family's SKILL.md is maintainer-side; this repo ships the registration so `forge-state init --family client` works.
+
 ## [1.3.1] — 2026-09-10
 
 ### Added
