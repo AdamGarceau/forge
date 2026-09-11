@@ -26,12 +26,15 @@
 | content | `/forge-content` | `CONTENT-STATE.md` | `<channel or project>/videos/<slug>` | `--family content` |
 | offer | `/forge-offer` | `OFFER-STATE.md` | `<project>/offers/<slug>` | `--family offer` |
 | client | `/forge-client` | `CLIENT-STATE.md` | `<clients root>/<slug>` | `--family client` |
+| ads | `/forge-ads` | `ADS-STATE.md` | `<property or client root>/ads/<slug>` | `--family ads` |
+| job | `/job-apply` | `JOB-STATE.md` | `<job-search root>/output/<slug>` | `--family job` |
 
 Routing between families: software builds go to `/forge`, games to `/forge-games`,
 marketing plans and channel asks to `/forge-gtm`, "verify everything / research
 paper" to `/forge-research`, "make the video" to `/forge-content`, "what do we
-sell them" to `/forge-offer`, and a lead, proposal, shoot, invoice, or case study
-for a paying client to `/forge-client`. A package or pitch that rests on unverified
+sell them" to `/forge-offer`, and a lead, proposal, shoot, invoice, or case study for a paying
+client to `/forge-client`; money about to be spent on ads (a pixel question, a campaign, a
+budget, a 7-day read) to `/forge-ads`, and a job application to `/job-apply`. A package or pitch that rests on unverified
 numbers runs research first.
 
 ## F0. The claim
@@ -44,8 +47,10 @@ Every family's H1 is followed by the same shape of promise:
 
 software: software / code. games: playable game / code. gtm: launch plan / market
 (youtube lens: channel strategy / read a channel). research: verified evidence /
-investigate. content: published video / edit. offer: owned revenue / sell. client: paid client work / run an agency. A new family states its claim in
-this shape before it states anything else.
+investigate. content: published video / edit. offer: owned revenue / sell. client:
+paid client work / run an agency. ads: paid acquisition / buy media. job: a
+ready-to-send application / write about yourself. A new family states its
+claim in this shape before it states anything else.
 
 ## F1. Never run from `~`
 

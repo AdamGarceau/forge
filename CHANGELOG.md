@@ -2,6 +2,17 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.4.0] — 2026-09-11
+
+Two families in one release: the ads pipeline, and the job pipeline registered as-is.
+
+### Added
+- **The `ads` family** registered in `FAMILIES` in `scripts/forge_state.py` and in the family table of `FAMILY-RULES.md`: `/forge-ads`, manifest `ADS-STATE.md`, run directory `<property or client root>/ads/<slug>`, six stages (intake and a measurement gate that refuses to start until the conversion event fires on the destination page and is proven from the raw source; plan with the kill and scale rules written before any creative; creative and destination gated two-sided with an in-house veto on claims and policy; launch built paused with the go recorded; the 7-day read that executes the plan's own rules; the 28-day read and write-back). The claim: one-shot paid acquisition, even if you can't buy media. The family's SKILL.md is maintainer-side; this repo ships the registration so `forge-state init --family ads` works.
+- **The `job` family** registered the same way: `/job-apply`, manifest `JOB-STATE.md`, run directory `<job-search root>/output/<slug>`, seven stages taken from the existing skill unchanged (source, read the form first, research, tailor, synth gate on both documents, packet, submit on an explicit go). The claim: one-shot ready-to-send application, even if you can't write about yourself. No rewrite; the pipeline already had the Forge shape and only lacked state.
+
+### Changed
+- `FAMILY-RULES.md`: the family table carries nine families; the routing paragraph sends ad spend to `/forge-ads` and applications to `/job-apply`; F0 lists both claims. The "planned" line is gone because the queue of families is empty.
+
 ## [1.3.2] — 2026-09-10
 
 ### Added

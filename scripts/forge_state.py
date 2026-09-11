@@ -117,6 +117,23 @@ FAMILIES = {
         ("4", "Invoice, then paid",                  True),
         ("5", "Testimonial, case study, write-back", False),
     ]),
+    "ads": ("/forge-ads", "ADS-STATE.md", [
+        ("0", "Intake and the measurement gate",          True),
+        ("1", "Plan, kill rules written first",          True),
+        ("2", "Creative and destination, two-sided",     True),
+        ("3", "Launch, paused first, go recorded",       True),
+        ("4", "7-day read: kill or scale by the rules",  True),
+        ("5", "28-day read and write-back",              True),
+    ]),
+    "job": ("/job-apply", "JOB-STATE.md", [
+        ("1",  "Source the jobs",                        True),
+        ("1A", "Read the form first (Check 7)",          True),
+        ("2",  "Research (/job-cep)",                    True),
+        ("3",  "Tailor in Adam's voice",                 True),
+        ("4",  "Synth gate, both documents, 9/10",       True),
+        ("5",  "Assemble the packet",                    True),
+        ("6",  "Submit on explicit go, log outcome",     True),
+    ]),
 }
 MANIFESTS = sorted({v[1] for v in FAMILIES.values()})
 RESOLVED = ("pass", "waived", "n/a")          # counts as done

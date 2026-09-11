@@ -20,7 +20,7 @@ description: >
 
 > **The claim:** One-shot software, even if you can't code. Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
 
-> **Version 1.3.2** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+> **Version 1.4.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
 
 > **Inherits `FAMILY-RULES.md`** (this directory; F0 to F16): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
 
