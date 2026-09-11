@@ -2,6 +2,19 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.5.0] — 2026-09-11
+
+The human touchpoint is a field the state machine prints, not a sentence in the prose.
+
+### Added
+- **`forge-state human "<who>" --when <date> --how "<channel>" --said "<verbatim or path>"`** appends an entry to a `human:` list in the manifest frontmatter (F5, one named real human per run; a run can have several entries). `--stage` defaults to the run's current stage; `--said` may be the verbatim or the path to the file that holds it, and an empty `--said` is refused because an empty record is not a touchpoint.
+- **`forge-state status`** prints every human entry under the gate table (date, who, channel, stage, the quoted verbatim). A run with none prints `HUMAN: none yet, all-synthetic` in the same style as BLOCKING. Flagged, never blocked: `next` and its exit codes are unchanged.
+- **`forge-state scan --verbose`** adds one line counting tracked runs past Stage 1 with no human entry. Quiet otherwise, so the session-start hook is unchanged.
+
+### Changed
+- `init`'s body template: the "one real-human touchpoint" prose section is now a "Human touchpoint" pointer at the field and the command, so the prose and the frontmatter cannot disagree.
+- `FAMILY-RULES.md` F5 carries the command and what `status`, `next`, and `scan` do with it.
+
 ## [1.4.0] — 2026-09-11
 
 Two families in one release: the ads pipeline, and the job pipeline registered as-is.

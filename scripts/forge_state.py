@@ -15,6 +15,7 @@ This does the same thing GSD does, for every Forge family:
     <manifest>.md        one file per run: YAML frontmatter (machine) + prose (human)
     forge-state next     the single next action; exit code says whether a gate blocks
     forge-state gate     records a transition (and refuses out-of-order passes)
+    forge-state human    records the named real-human touchpoint (F5); status flags a run with none
     forge-state scan     every run that has gone idle with a gate owed (session-start hook)
 
 The manifest is whatever the family already calls its resume-cold document:
@@ -313,9 +314,12 @@ is for a human picking this run up with no memory of the session.
 
 (Every `waived` gate has its reason here as well as in its frontmatter note.)
 
-## The one real-human touchpoint this run used
+## Human touchpoint
 
-(Forge rule 13: all-synthetic is a flagged risk, not a clean pass.)
+Recorded in the frontmatter `human:` list, never here by hand:
+`forge-state human "<who>" --when <date> --how "<channel>" --said "<verbatim or path>"`.
+`forge-state status` prints every entry; a run with none is flagged
+"HUMAN: none yet, all-synthetic" (F5: flagged, not blocked).
 
 ## Compute split
 
@@ -359,6 +363,58 @@ def paste_block(root, st, stage):
             % (shown, f["cmd"], stage, ending))
 
 
+def humans(st):
+    """The named real-human touchpoints (F5). A list; a run can have several."""
+    h = st.get("human")
+    return h if isinstance(h, list) else []
+
+
+def human_lines(st):
+    """status lines for the human field: one per entry, or the F5 flag."""
+    hs = humans(st)
+    if not hs:
+        return ["  ⚠️  HUMAN: none yet, all-synthetic  ← F5: flagged, not blocked. "
+                "Record one: forge-state human \"<who>\" --how \"<channel>\" --said \"…\""]
+    out = []
+    for h in hs:
+        said = h.get("said", "")
+        if len(said) > 90:
+            said = said[:87] + "…"
+        out.append("  🧑  HUMAN: %s · %s · %s%s" % (
+            h.get("when", "?"), h.get("who", "?"), h.get("how", "?"),
+            "  (stage %s)" % h["stage"] if h.get("stage") else ""))
+        if said:
+            out.append("        \u201c%s\u201d" % said)
+    return out
+
+
+def past_stage_one(st):
+    """True once the family's Stage 1 gate is resolved (pass/waived/n/a)."""
+    return st["gates"].get("1", {}).get("state", "pending") in RESOLVED
+
+
+def cmd_human(root, st, body, path, args):
+    f = family(st)
+    if args.stage and args.stage not in st["gates"]:
+        sys.exit("unknown stage %r for %s (expected one of %s)"
+                 % (args.stage, f["cmd"], ", ".join(f["order"])))
+    if not args.said.strip():
+        sys.exit("--said is the record: the verbatim, or the path to it. Empty is not a touchpoint.")
+    entry = {"who": args.who, "when": args.when or today(), "how": args.how, "said": args.said}
+    if args.stage:
+        entry["stage"] = args.stage
+    else:
+        cur = derive_stage(st)
+        if cur != "DONE":
+            entry["stage"] = cur
+    hs = humans(st)
+    hs.append(entry)
+    st["human"] = hs
+    save(root, st, body, path)
+    print("human touchpoint %d recorded: %s · %s · %s" % (len(hs), entry["when"], entry["who"], entry["how"]))
+    return 0
+
+
 def cmd_status(root, st, body, path, args):
     f = family(st)
     print("%s  [%s · %s mode]" % (st["project"], f["cmd"], st.get("mode", "?")))
@@ -380,6 +436,9 @@ def cmd_status(root, st, body, path, args):
         print("  %s  %-3s %-36s %-8s%s" % (mark, k, f["names"][k], state, flag))
         if g.get("note"):
             print("        %s" % g["note"])
+    print()
+    for line in human_lines(st):
+        print(line)
     o, fl = owed(st), failed(st)
     print("\n%d blocking gate%s outstanding%s." % (
         len(o), "" if len(o) == 1 else "s", ", %d FAILED" % len(fl) if fl else ""))
@@ -540,7 +599,7 @@ def find_manifests(home, maxdepth=5):
 
 def cmd_scan(root, st, body, path, args):
     home = os.path.expanduser("~")
-    stalled, active, legacy = [], [], []
+    stalled, active, legacy, synthetic = [], [], [], []
     for mp in find_manifests(home):
         d = os.path.dirname(mp)
         s, _, _ = load(d)
@@ -551,6 +610,8 @@ def cmd_scan(root, st, body, path, args):
         f = family(s)
         fl, o = failed(s), owed(s)
         idle = age_days(s.get("updated"))
+        if past_stage_one(s) and not humans(s):
+            synthetic.append(rel)
         if fl:
             k = fl[0][0]
             stalled.append("FORGE: %s — Stage %s (%s) FAILED, decision owed → cd %s && forge-state next"
@@ -572,6 +633,9 @@ def cmd_scan(root, st, body, path, args):
             print("legacy %s (prose only; track it: cd %s && forge-state init --family …)" % (l, l))
     elif not stalled and args.verbose:
         print("FORGE: nothing stalled (%d tracked, %d legacy)" % (len(active) + len(stalled), len(legacy)))
+    if args.verbose and synthetic:
+        print("FORGE: %d run%s past Stage 1 with no human touchpoint (F5, all-synthetic): %s"
+              % (len(synthetic), "" if len(synthetic) == 1 else "s", ", ".join(synthetic)))
     return 2 if stalled else 0
 
 
@@ -587,6 +651,12 @@ def main():
     g.add_argument("--note", default="")
     g.add_argument("--next", default="", help="set the project's next action in the same write")
     g.add_argument("--force", action="store_true", help="allow an out-of-order pass (recorded as such)")
+    h = sub.add_parser("human", help="record the named real-human touchpoint (F5); a run can have several")
+    h.add_argument("who", help="the person, by name or role (the client, Brooke, a viewer)")
+    h.add_argument("--when", default="", help="YYYY-MM-DD (default: today)")
+    h.add_argument("--how", required=True, help="the channel: in person, phone, text, email, recording")
+    h.add_argument("--said", required=True, help="the verbatim, or the path to it")
+    h.add_argument("--stage", default="", help="which stage the read belongs to (default: current)")
     n = sub.add_parser("set-next", help="set the single next action")
     n.add_argument("text")
     v = sub.add_parser("verdict", help="record the verdict")
@@ -617,7 +687,7 @@ def main():
                  "  track it: forge-state init --family %s"
                  % (root, " (prose-only %s found)" % os.path.basename(path) if path else "",
                     "|".join(sorted(FAMILIES))))
-    return {"status": cmd_status, "next": cmd_next, "gate": cmd_gate,
+    return {"status": cmd_status, "next": cmd_next, "gate": cmd_gate, "human": cmd_human,
             "set-next": cmd_set_next, "verdict": cmd_verdict}[cmd](root, st, body, path, args)
 
 

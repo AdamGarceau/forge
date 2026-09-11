@@ -119,7 +119,19 @@ guess what they can tell you. Interactive modes ask; autonomous mode collects
 these at intake.
 
 **Every manifest names the ONE real-human touchpoint the run used or is missing.**
-All-synthetic is a flagged risk, not a clean pass.
+All-synthetic is a flagged risk, not a clean pass. The record is a field, not a
+prose line:
+
+```
+forge-state human "<who>" --when <date> --how "<channel>" --said "<verbatim or path>"
+```
+
+It appends to the frontmatter `human:` list (a run can have several; `--stage`
+defaults to the current stage). `forge-state status` prints every entry under
+the gate table; a run with none prints `HUMAN: none yet, all-synthetic` in the
+same style as BLOCKING. `next` never gates on it; `scan --verbose` counts runs
+past Stage 1 with no entry. The verbatim goes in `--said`, or the path to the
+file that holds it.
 
 ## F6. Gates block, `forge-state` is the mechanism, the manifest is the resume-cold document
 
