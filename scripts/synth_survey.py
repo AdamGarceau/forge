@@ -84,6 +84,21 @@ def resolve_text_or_file(value: str) -> str:
     return value
 
 
+PERSONA_LIBRARY = Path(os.environ.get("PERSONA_LIBRARY", "~/personas")).expanduser()
+
+
+def resolve_personas(arg: str):
+    """A path wins; otherwise a bare audience name maps to <library>/<name>.md."""
+    p = Path(arg).expanduser()
+    if p.is_file():
+        return p
+    if "/" not in arg and not arg.endswith(".md"):
+        lib = PERSONA_LIBRARY / f"{arg}.md"
+        if lib.is_file():
+            return lib
+    return None
+
+
 def parse_personas(path: Path, total_n: int):
     text = path.read_text()
     blocks = re.split(r"\n## ", "\n" + text)[1:]
@@ -288,7 +303,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    ap.add_argument("--personas", required=True, help="Path to personas markdown file.")
+    ap.add_argument("--personas", required=True,
+                     help="Path to a personas markdown file, or a bare audience name resolved "
+                          f"against the persona library ({PERSONA_LIBRARY}).")
     ap.add_argument("--concept", required=True,
                      help='Concept/copy text to test, or "@path/to/file.md" to read from a file.')
     ap.add_argument("--provider", choices=["auto", "ollama", "anthropic"], default="auto",
@@ -306,9 +323,9 @@ def main():
                      help='What to call the thing being tested in prompts (default: "the concept").')
     args = ap.parse_args()
 
-    personas_path = Path(args.personas).expanduser()
-    if not personas_path.is_file():
-        eprint(f"FATAL: personas file not found: {personas_path}")
+    personas_path = resolve_personas(args.personas)
+    if personas_path is None:
+        eprint(f"FATAL: personas not found: {args.personas} (not a file, and not an audience in {PERSONA_LIBRARY})")
         sys.exit(1)
 
     concept_text = resolve_text_or_file(args.concept)

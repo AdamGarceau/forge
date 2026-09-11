@@ -225,7 +225,15 @@ bar for structural reasons, not quality reasons.
   shouldn't deliver is rejected regardless of score gain.
 - **Sourced personas or no personas.** A synthetic panel is built only from a
   persona file whose every segment cites its sources and n. Extrapolating a
-  persona from a handful of comments is banned. Reuse before rebuild.
+  persona from a handful of comments is banned. **Load and extend, never
+  rebuild:** keep a persona library (`~/personas/` by default, `PERSONA_LIBRARY`
+  to move it; format in `personas/README.md`), one sourced panel per file with an
+  index of audience, sources, n, date, and which runs loaded it. A run copies the
+  closest file into its run directory, extends it (new segments carry their own
+  Sources line; re-weighting cites its evidence), and writes itself back into the
+  index at Stage 5. A new audience file is created only when nothing in the
+  library covers the audience. `synth_survey.py --personas <audience>` resolves a
+  bare name against the library.
 - **A synthetic panel may never score enjoyment, taste, or fun.** Perception and
   comprehension questions only (readability, contrast, "what does this button
   do"). Any number purporting to score fun is deleted, not discounted.

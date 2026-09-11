@@ -2,6 +2,17 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.6.0] — 2026-09-11
+
+The persona library: panels are loaded and extended, never rebuilt per run.
+
+### Added
+- **`personas/README.md`**: the library rule (F8) and the file format one sourced panel per file, an `About this panel` section for bias warnings and retirement flags, and a required `Sources:` line on every segment. Default location `~/personas/`, `PERSONA_LIBRARY` to move it.
+- **`synth_survey.py --personas <audience>`** resolves a bare name against the library (`<library>/<audience>.md`); a path still wins. One small stdlib function, `resolve_personas()`.
+
+### Changed
+- `FAMILY-RULES.md` F8 carries the load-and-extend rule and the index. `SKILL.md` Stage 1 loads from the library and extends from the CEP segments instead of building from scratch.
+
 ## [1.5.0] — 2026-09-11
 
 The human touchpoint is a field the state machine prints, not a sentence in the prose.

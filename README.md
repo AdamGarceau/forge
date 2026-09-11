@@ -141,6 +141,8 @@ The installer offers to add GSD for you. Forge checks whether GSD is installed: 
 
 ## Under the hood, for the builders
 
+The fake focus group reads its people from a persona library (`personas/README.md`): one sourced panel per audience, loaded and extended by every run rather than reinvented, with a `Sources:` line on every segment so nobody can extrapolate a market from six comments.
+
 Not your first rodeo? Here's what's actually happening, minus the hand-holding.
 
 **Forge wraps your build, it doesn't replace it.** You keep your setup. Forge is Stages 0-1 in front and 3-5 behind; the build itself (Stage 2) hands off to GSD or your existing Claude Code flow and respects your `.planning/` state. Nothing to abandon. Slogan version: *Forge is Step 0. GSD is the build.*
