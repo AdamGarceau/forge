@@ -2,6 +2,11 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.3.1] — 2026-09-10
+
+### Added
+- **The `offer` family** registered in `FAMILIES` in `scripts/forge_state.py` and in the family table of `FAMILY-RULES.md`: `/forge-offer`, manifest `OFFER-STATE.md`, run directory `<project>/offers/<slug>`, seven stages (brief and the money step, CEP from the audience's own words, offer with a two-sided gate, build the thing, landing page and email sequence, launch with the payment path test-purchased first, measure at 28 days). The claim: one-shot owned revenue, even if you can't sell. The family's SKILL.md is maintainer-side; this repo ships the registration so `forge-state init --family offer` works.
+
 ## [1.3.0] — 2026-09-10
 
 One rulebook, deltas per family.

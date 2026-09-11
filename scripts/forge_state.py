@@ -100,6 +100,15 @@ FAMILIES = {
         ("5", "Packaging and publish",              True),
         ("6", "Measure and learn (72h / 28d)",      True),
     ]),
+    "offer": ("/forge-offer", "OFFER-STATE.md", [
+        ("0", "Brief and the money step",           True),
+        ("1", "CEP from the audience's own words",  True),
+        ("2", "Offer, two-sided",                   True),
+        ("3", "Build the thing",                    True),
+        ("4", "Landing page and email sequence",    True),
+        ("5", "Launch, money step first",           True),
+        ("6", "Measure at 28 days",                 True),
+    ]),
 }
 MANIFESTS = sorted({v[1] for v in FAMILIES.values()})
 RESOLVED = ("pass", "waived", "n/a")          # counts as done
