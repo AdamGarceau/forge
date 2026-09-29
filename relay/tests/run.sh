@@ -109,6 +109,16 @@ ok "never idle: exit 1, /exit never sent" '[[ $rc == 1 && $(sent "/exit") == 0 ]
 setup clean; touch $SCEN/no_claude; run $HF
 ok "no claude in pane: exit 3, /exit never sent" '[[ $rc == 3 && $(sent "/exit") == 0 ]]'
 
+t "T16 agent regex vs real pane captures (9/29 calibration)"
+RE=$(grep -m1 '^AGENT_RE=' relay.candidate | sed "s/^AGENT_RE=\${RELAY_AGENT_RE:-'//; s/'}\$//")
+ok "running agent row matches" 'grep -Eq -- "$RE" tests/fixtures/pane-agent-running.txt'
+ok "finished agent (transcript Agent( line still visible) does not match" '! grep -Eq -- "$RE" tests/fixtures/pane-agent-finished.txt'
+ok "footer alone (2 shells / for agents) does not match" '! printf "  bypass permissions on · 2 shells · ← for agents\n  ⏺ main\n" | grep -Eq -- "$RE"'
+setup clean; cp tests/fixtures/pane-agent-running.txt $SCEN/screen.txt; run $HF
+ok "real running capture holds, abort 4, /exit never sent" '[[ $rc == 4 && $(sent "/exit") == 0 ]]'
+setup clean; cp tests/fixtures/pane-agent-finished.txt $SCEN/screen.txt; run $HF
+ok "real finished capture relays" 'logs | grep -q "| OK relayed"'
+
 t "T15 isolation: the harness never touched production"
 ok "~/maax/fleet/relay unchanged" '[[ "$(shasum $PROD 2>/dev/null)" == "$prod_sum" ]]'
 ok "no test ever reached a real herdr on PATH" '! ls ${^realcalled}/REAL-HERDR-CALLED >/dev/null 2>&1'

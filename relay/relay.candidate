@@ -17,9 +17,10 @@ MARK=${RELAY_ABORT_MARK:-$HOME/maax/fleet/.relay-abort}
 LOCK=${RELAY_LOCK:-$HOME/maax/fleet/.relay.lock}
 SCALE=${RELAY_TIME_SCALE:-1}
 LAUNCH=${RELAY_LAUNCH_CMD:-'cd ~ && claude --model opus "$(cat ~/maax/fleet/.relay-kickoff)"'}
-# Pane text that means an in-session Agent/subagent is running. UNVERIFIED against a live pane:
-# calibrate with `herdr pane read $HERDR_PANE_ID --source visible` while an Agent runs.
-AGENT_RE=${RELAY_AGENT_RE:-'[0-9]+ (local )?(agents?|subagents?) (running|working)|Running [0-9]+ (agents?|subagents?)|⏺ *Agent\('}
+# Pane text that means an in-session Agent/subagent is running. Calibrated 9/29 against a live pane (validation/07-dry-run.md):
+# the native agent-list row `  ◯ <type>  <desc>   3s · ↓ 59.7k tokens` at line start. NOT '⏺ Agent(' (stays in the transcript after
+# the agent finishes) and NOT '← for agents' (shown whenever shells exist). Fixtures: tests/fixtures/pane-agent-*.txt.
+AGENT_RE=${RELAY_AGENT_RE:-'^ *[◯●◉] .*[0-9]+[smh] · [↓↑] [0-9.]+[kM]? tokens|[0-9]+ (local )?(agents?|subagents?) (running|working)'}
 
 # Detach into our own session so the /exit of the parent claude can't take us down with it.
 if [[ -z ${RELAY_DETACHED:-} && -z ${RELAY_NO_DETACH:-} && $DRY == 0 ]]; then
