@@ -42,3 +42,11 @@ Recommendation: keep it a WARN for the swap (a refusal could strand a legitimate
 ## Swap recommendation
 
 Ready to swap after Adam accepts Finding 2 as WARN (or asks for the strict variant). Still owed per FORGE-STATE: watch 3 real relays. A live (non-dry) `/exit` path was not exercised here by design.
+
+## Update (9:35 AM): not-newest handoff now refuses (Maax decision)
+
+Maax ruled the WARN wrong: the hook injects the newest handoff, so relaying a stale one boots the next seat on the wrong context.
+Change: `relay.candidate` now `die 1` on a handoff that is not the newest in the handoff dir, unless `RELAY_ALLOW_STALE=1` (then WARN and relay).
+- T10 updated: not-newest exits 1, `/exit` never sent, ABORT logged, abort marker written. New test: `RELAY_ALLOW_STALE=1` warns and relays.
+- Live dry-run re-check (/tmp/relay-dryrun/step6-notnewest-refuse.txt): `DRY-LOG: ABORT handoff is not the newest in /tmp/relay-dryrun/handoffs (newest: 20260929-0910-newer.md); … RELAY_ALLOW_STALE=1 overrides`, rc=1, before any pane wait. **Check 4b now PASS.**
+- tests/run.sh: 53/53.

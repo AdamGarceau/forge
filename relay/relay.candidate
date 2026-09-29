@@ -5,7 +5,7 @@
 # agents run, H3 handoff integrity, H4 --dry-run, H5 new-pid verification, H6 lock, H7 abort marker.
 # Test seams (all default to production values): RELAY_HERDR, RELAY_LOG, RELAY_KICKOFF_FILE,
 # RELAY_HANDOFF_DIR, RELAY_ABORT_MARK, RELAY_LOCK, RELAY_TIME_SCALE, RELAY_MAX_INPUT_TRIES,
-# RELAY_AGENT_RE, RELAY_NO_DETACH, RELAY_DRY_RUN, RELAY_LAUNCH_CMD.
+# RELAY_AGENT_RE, RELAY_NO_DETACH, RELAY_DRY_RUN, RELAY_LAUNCH_CMD, RELAY_ALLOW_STALE.
 set -u
 DRY=${RELAY_DRY_RUN:-0}
 if [[ ${1:-} == --dry-run ]]; then DRY=1; shift; fi
@@ -57,8 +57,12 @@ size=$(wc -c < $HANDOFF | tr -d ' ')
 grep -q 'PASTE THIS TO START' $HANDOFF || die 1 "handoff has no 'PASTE THIS TO START' kickoff block $HANDOFF"
 newest=$(ls -t $HDIR/*.md 2>/dev/null | head -1)
 if [[ -n $newest && $newest:A != $HANDOFF:A ]]; then
-  log "WARN handoff is not the newest in $HDIR (newest: ${newest:t}); the SessionStart hook will inject that one instead"
-  say "WARN not newest handoff (newest ${newest:t})"
+  if [[ ${RELAY_ALLOW_STALE:-0} == 1 ]]; then
+    log "WARN handoff is not the newest in $HDIR (newest: ${newest:t}); RELAY_ALLOW_STALE=1, relaying anyway"
+    say "WARN not newest handoff (newest ${newest:t}), RELAY_ALLOW_STALE=1"
+  else
+    die 1 "handoff is not the newest in $HDIR (newest: ${newest:t}); the SessionStart hook would inject that one. RELAY_ALLOW_STALE=1 overrides"
+  fi
 fi
 KICKOFF="You are Maax, CEO (self-relay). Read ~/maax/FLEET.md (Active + Queue only; wound rows live in fleet/wound-archive.md, grep only), read only the reports.md lines after the last RELAY line, wind down finished rows, refill slots from the Queue, then run ~/maax/fleet/wake.sh with run_in_background. Follow ~/maax/fleet/CONSOLE.md \"On every wake\": republish ~/maax/fleet/console/index.html to the Console url unchanged (that arms live wake on Adam's messages), answer unreplied inbox messages, and push every dispatch/report to it. Mirror the whole conversation into the Console chat collection (CONSOLE.md \"Chat mirror\"): a session divider first, then every Adam terminal message and every reply you give him. Resume $HANDOFF and delete it. Adam is away; keep going without him."
 [[ -f $MARK ]] && log "NOTE previous abort marker: $(cat $MARK)" && rm -f $MARK

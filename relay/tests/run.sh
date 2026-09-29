@@ -83,7 +83,10 @@ ok "tiny: exit 1, /exit never sent" '[[ $rc == 1 && $(sent "/exit") == 0 ]] && l
 setup clean; { for i in {1..40}; do print "filler line $i"; done } > $HF; run $HF
 ok "no kickoff block: exit 1, /exit never sent" '[[ $rc == 1 && $(sent "/exit") == 0 ]] && logs | grep -q "no .PASTE THIS TO START"'
 setup clean; cp $HF $W/handoffs/20260929-0900-newer.md; touch -t 209912312359 $W/handoffs/20260929-0900-newer.md; run $HF
-ok "not newest: WARN but relays" 'logs | grep -q "WARN handoff is not the newest" && logs | grep -q "| OK relayed"'
+ok "not newest: exit 1, /exit never sent, ABORT logged" '[[ $rc == 1 && $(sent "/exit") == 0 ]] && logs | grep -q "ABORT handoff is not the newest"'
+ok "not newest: abort marker written" '[[ -s $W/abort ]]'
+setup clean; cp $HF $W/handoffs/20260929-0900-newer.md; touch -t 209912312359 $W/handoffs/20260929-0900-newer.md; RELAY_ALLOW_STALE=1 run $HF
+ok "RELAY_ALLOW_STALE=1: WARN but relays" 'logs | grep -q "WARN handoff is not the newest" && logs | grep -q "| OK relayed"'
 
 t "T11 dry-run changes nothing"
 setup clean; run --dry-run $HF
