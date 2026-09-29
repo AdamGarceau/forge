@@ -1,0 +1,40 @@
+#!/bin/bash
+# Fake herdr for relay tests. State lives in $SCEN. Logs every call to $SCEN/calls.log. Never touches a real pane.
+S=${SCEN:?SCEN not set}
+echo "herdr $*" >> $S/calls.log
+mode() { cat $S/mode 2>/dev/null || echo clean; }
+spawn() { # spawn fake claude ($1 = normal|deaf); print pid
+  if [[ $1 == deaf ]]; then bash -c 'trap "" TERM; while :; do sleep 1; done' >/dev/null 2>&1 & else sleep 300 >/dev/null 2>&1 & fi
+  echo $!; disown; }
+case "$1 $2" in
+"pane read")
+  fmt=ansi; [[ " $* " == *" --format ansi "* ]] || fmt=txt
+  if [[ $fmt == ansi ]]; then
+    n=$(( $(cat $S/readn 2>/dev/null || echo 0) + 1 )); echo $n > $S/readn
+    if [[ -f $S/clear_after && $n -gt $(cat $S/clear_after) ]]; then cat $S/screen.clean.ansi; else cat $S/screen.ansi; fi
+  else
+    if [[ -f $S/clear_after && $(cat $S/readn 2>/dev/null || echo 0) -gt $(cat $S/clear_after) ]]; then cat $S/screen.clean.txt; else cat $S/screen.txt; fi
+  fi ;;
+"pane send-text")
+  echo "SEND-TEXT $4" >> $S/sent.log
+  pid=$(cat $S/pid 2>/dev/null)
+  if [[ $4 == /exit ]]; then
+    case $(mode) in
+      clean) kill $pid 2>/dev/null; sleep 0.05 ;;
+      dialog|dialog_num|deaf) printf '%s\n' "shell · wake.sh" "❯ 1. Exit and stop tasks" "2. Move to background and exit" "3. Stay" > $S/screen.txt ;;
+    esac
+  elif [[ $4 == 1 && $(mode) == dialog_num ]]; then kill $pid 2>/dev/null; sleep 0.05
+  fi ;;
+"pane send-keys") echo "SEND-KEYS ${*:4}" >> $S/sent.log ;;
+"pane process-info")
+  p=""; if [[ -f $S/newpid ]] && kill -0 $(cat $S/newpid) 2>/dev/null; then p=$(cat $S/newpid)
+  elif [[ -f $S/pid ]] && kill -0 $(cat $S/pid) 2>/dev/null && [[ ! -f $S/no_claude ]]; then p=$(cat $S/pid); fi
+  if [[ -n $p ]]; then echo "{\"result\":{\"process_info\":{\"foreground_processes\":[{\"pid\":$p,\"argv0\":\"claude\"}]}}}"
+  else echo '{"result":{"process_info":{"foreground_processes":[{"pid":1,"argv0":"zsh"}]}}}'; fi ;;
+"pane run")
+  echo "RUN $4" >> $S/sent.log
+  if [[ $(mode) != nolaunch ]]; then spawn normal > $S/newpid; fi ;;
+"agent wait") exit $(cat $S/wait_rc 2>/dev/null || echo 0) ;;
+*) echo "herdr-stub: unhandled: $*" >&2; exit 9 ;;
+esac
+exit 0

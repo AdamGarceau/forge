@@ -1,0 +1,134 @@
+#!/bin/zsh
+# relay.candidate — hardened candidate of ~/maax/fleet/relay. NOT swapped into production.
+# Same contract as relay: `relay <handoff-file>` from inside the Maax pane (run_in_background).
+# Hardening over relay (see .planning/PLAN.md): H1 exit-dialog by number key, H2 hold while in-session
+# agents run, H3 handoff integrity, H4 --dry-run, H5 new-pid verification, H6 lock, H7 abort marker.
+# Test seams (all default to production values): RELAY_HERDR, RELAY_LOG, RELAY_KICKOFF_FILE,
+# RELAY_HANDOFF_DIR, RELAY_ABORT_MARK, RELAY_LOCK, RELAY_TIME_SCALE, RELAY_MAX_INPUT_TRIES,
+# RELAY_AGENT_RE, RELAY_NO_DETACH, RELAY_DRY_RUN, RELAY_LAUNCH_CMD.
+set -u
+DRY=${RELAY_DRY_RUN:-0}
+if [[ ${1:-} == --dry-run ]]; then DRY=1; shift; fi
+HERDR=${RELAY_HERDR:-herdr}
+LOG=${RELAY_LOG:-$HOME/maax/fleet/relay.log}
+KICKFILE=${RELAY_KICKOFF_FILE:-$HOME/maax/fleet/.relay-kickoff}
+HDIR=${RELAY_HANDOFF_DIR:-$HOME/maax/handoffs}
+MARK=${RELAY_ABORT_MARK:-$HOME/maax/fleet/.relay-abort}
+LOCK=${RELAY_LOCK:-$HOME/maax/fleet/.relay.lock}
+SCALE=${RELAY_TIME_SCALE:-1}
+LAUNCH=${RELAY_LAUNCH_CMD:-'cd ~ && claude --model opus "$(cat ~/maax/fleet/.relay-kickoff)"'}
+# Pane text that means an in-session Agent/subagent is running. UNVERIFIED against a live pane:
+# calibrate with `herdr pane read $HERDR_PANE_ID --source visible` while an Agent runs.
+AGENT_RE=${RELAY_AGENT_RE:-'[0-9]+ (local )?(agents?|subagents?) (running|working)|Running [0-9]+ (agents?|subagents?)|⏺ *Agent\('}
+
+# Detach into our own session so the /exit of the parent claude can't take us down with it.
+if [[ -z ${RELAY_DETACHED:-} && -z ${RELAY_NO_DETACH:-} && $DRY == 0 ]]; then
+  RELAY_DETACHED=1 HERDR_PANE_ID=${HERDR_PANE_ID:-} python3 -c 'import os,sys;os.setsid();os.execvp(sys.argv[1],sys.argv[1:])' "$0" "$@" </dev/null >>$LOG 2>&1 &!
+  exit 0
+fi
+HANDOFF=${1:?usage: relay [--dry-run] <handoff-file>}
+PANE=${HERDR_PANE_ID:?not in a herdr pane}
+T0=$SECONDS
+log() { if (( DRY )); then print -r -- "DRY-LOG: $*"; else print -r -- "$(date '+%Y-%m-%d %-I:%M %p') | $*" >> $LOG; fi; }
+say() { (( DRY )) && print -r -- "DRY: $*"; }
+nap() { sleep $(( $1 * SCALE )); }
+die() { # die <exit> <message>: log, drop a marker the next wake can see, release lock
+  log "ABORT $2"; (( DRY )) || print -r -- "$(date -Iseconds) $2 (handoff $HANDOFF)" > $MARK; exit $1
+}
+strip() { sed $'s/\x1b\\[[0-9;]*m//g'; }
+pane_text() { $HERDR pane read $PANE --source visible --lines 40 2>/dev/null; }
+
+# H6. One relay at a time (9/27: three aborts in five minutes looked like overlapping tries).
+if (( ! DRY )); then
+  if ! mkdir $LOCK 2>/dev/null; then
+    lpid=$(cat $LOCK/pid 2>/dev/null)
+    if [[ -n $lpid ]] && kill -0 $lpid 2>/dev/null; then log "ABORT another relay running (pid $lpid)"; exit 5; fi
+    rm -rf $LOCK; mkdir $LOCK 2>/dev/null || { log "ABORT cannot take lock"; exit 5; }
+  fi
+  print -r -- $$ > $LOCK/pid
+  trap 'rm -rf $LOCK' EXIT
+fi
+
+# H3. Handoff integrity: exists, real content, has the kickoff fence, is what the hook will inject.
+[[ -f $HANDOFF ]] || die 1 "no handoff $HANDOFF"
+size=$(wc -c < $HANDOFF | tr -d ' ')
+(( size >= 200 )) || die 1 "handoff too small ($size bytes) $HANDOFF"
+grep -q 'PASTE THIS TO START' $HANDOFF || die 1 "handoff has no 'PASTE THIS TO START' kickoff block $HANDOFF"
+newest=$(ls -t $HDIR/*.md 2>/dev/null | head -1)
+if [[ -n $newest && $newest:A != $HANDOFF:A ]]; then
+  log "WARN handoff is not the newest in $HDIR (newest: ${newest:t}); the SessionStart hook will inject that one instead"
+  say "WARN not newest handoff (newest ${newest:t})"
+fi
+KICKOFF="You are Maax, CEO (self-relay). Read ~/maax/FLEET.md (Active + Queue only; wound rows live in fleet/wound-archive.md, grep only), read only the reports.md lines after the last RELAY line, wind down finished rows, refill slots from the Queue, then run ~/maax/fleet/wake.sh with run_in_background. Follow ~/maax/fleet/CONSOLE.md \"On every wake\": republish ~/maax/fleet/console/index.html to the Console url unchanged (that arms live wake on Adam's messages), answer unreplied inbox messages, and push every dispatch/report to it. Mirror the whole conversation into the Console chat collection (CONSOLE.md \"Chat mirror\"): a session divider first, then every Adam terminal message and every reply you give him. Resume $HANDOFF and delete it. Adam is away; keep going without him."
+[[ -f $MARK ]] && log "NOTE previous abort marker: $(cat $MARK)" && rm -f $MARK
+
+read_input() {
+$HERDR pane read $PANE --source visible --lines 40 --format ansi 2>/dev/null | python3 -c '
+import re,sys
+lines=[l for l in sys.stdin.read().split("\n") if re.sub(r"\x1b\[[0-9;]*m","",l).startswith("❯")]
+if not lines: sys.exit()
+l=lines[-1]
+# drop styled runs that are dim (2) or grey (90, 38;5;24x, 38;2;r;g;b with r=g=b)
+l=re.sub(r"\x1b\[(?:[0-9;]*;)?(?:2|90|38;5;2[3-5][0-9]|38;2;(\d+);\1;\1)m[^\x1b]*","",l)
+t=re.sub(r"\x1b\[[0-9;]*m","",l).replace("❯","").strip()
+print(t)'
+}
+
+# 1+2. Wait for idle, an empty input box, and no in-session agents. Adam typing or an Agent running
+#    holds the relay (re-wait/re-check every 30s); it never aborts early and never kills agents.
+input=x; warned=0; awarned=0; agents=x
+for (( try=1; try<=${RELAY_MAX_INPUT_TRIES:-90}; try++ )); do
+  $HERDR agent wait $PANE --until idle --until done --timeout 1800000 >/dev/null 2>&1 \
+    || die 1 "pane never went idle"
+  nap 3
+  input=$(read_input)
+  agents=$(pane_text | strip | grep -Eo -- "$AGENT_RE" | head -1)
+  [[ -z $input && -z $agents ]] && break
+  if [[ -n $agents ]]; then (( awarned++ )) || log "WAIT in-session agents running, holding: ${agents[1,40]}"
+  else (( warned++ )) || log "WAIT input box not empty, holding: ${input[1,40]}"; fi
+  (( DRY )) && { say "would hold: input='${input[1,40]}' agents='${agents[1,40]}'"; exit 0; }
+  nap 30
+done
+[[ -n $agents ]] && die 4 "in-session agents still running after hold: ${agents[1,40]}"
+[[ -n $input ]] && die 2 "input box still not empty after hold: ${input[1,40]}"
+
+cpid=$($HERDR pane process-info --pane $PANE 2>/dev/null | python3 -c 'import json,sys;print(next((p["pid"] for p in json.load(sys.stdin)["result"]["process_info"]["foreground_processes"] if p["argv0"]=="claude"),""))')
+if (( DRY )); then say "checks passed; would /exit pid ${cpid:-?} in $PANE, then launch fresh claude with kickoff for $HANDOFF"; exit 0; fi
+[[ -n $cpid ]] || die 3 "no claude foreground process in $PANE (already exited?)"
+
+# 3. /exit. H1: if the "Exit and stop tasks" dialog appears, choose option 1 by NUMBER key, never bare
+#    Enter (9/28 4:32 PM the highlight sat on option 2 = move to background). TERM/KILL is the backstop.
+$HERDR pane send-text $PANE "/exit" && $HERDR pane send-keys $PANE enter
+dialog=0
+for i in {1..15}; do
+  kill -0 $cpid 2>/dev/null || break
+  if (( ! dialog )) && pane_text | strip | grep -q 'Exit and stop tasks'; then
+    dialog=1; $HERDR pane send-text $PANE "1"; log "NOTE exit dialog: chose 1 (Exit and stop tasks) by number"
+  fi
+  nap 1
+done
+if kill -0 $cpid 2>/dev/null; then
+  log "WARN /exit stalled; pane showed: $(pane_text | tr -s '\n ' ' ' | cut -c1-200)"
+  kill -TERM $cpid 2>/dev/null
+  for i in {1..15}; do kill -0 $cpid 2>/dev/null || break; nap 1; done
+  kill -0 $cpid 2>/dev/null && { kill -KILL $cpid 2>/dev/null; nap 2; }
+  kill -0 $cpid 2>/dev/null && die 3 "claude pid $cpid survived TERM+KILL"
+  log "forced exit of pid $cpid"
+fi
+nap 2
+print -r -- "$KICKOFF" > $KICKFILE
+$HERDR pane run $PANE "$LAUNCH"
+nap 20
+# H5. OK only if a NEW claude process (pid != old) is in the pane's foreground; agent-wait alone is
+#    true for a bare shell.
+npid=""
+for i in {1..12}; do
+  npid=$($HERDR pane process-info --pane $PANE 2>/dev/null | python3 -c 'import json,sys;print(next((p["pid"] for p in json.load(sys.stdin)["result"]["process_info"]["foreground_processes"] if p["argv0"]=="claude"),""))')
+  [[ -n $npid && $npid != $cpid ]] && break; npid=""; nap 5
+done
+if [[ -n $npid ]]; then
+  $HERDR agent wait $PANE --until working --until idle --timeout 60000 >/dev/null 2>&1
+  log "OK relayed $PANE (old pid $cpid, new pid $npid, $((SECONDS-T0))s) from $HANDOFF"
+else
+  die 6 "new claude not detected in $PANE after launch (old pid $cpid); seat may be at a shell prompt"
+fi
