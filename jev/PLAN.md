@@ -26,6 +26,28 @@ The SDK honors `TYPESAFE_BASE_URL`. Build `~/forge/jev/shim.py`: a localhost ser
 - Outward-facing: P(yes) ~0.00 on nearly everything. Eyeballed 30 random lines: 2 real outward actions (ClickUp comments) both scored 0.00. Missed. A keyword rule (sent/posted/uploaded/commented/submitted/pushed) beats it.
 - Verdict: not wired into Maax's QC. The status field the worker writes already IS DONE/BLOCKED; the QC value is judging NEEDS-ADAM and outward-facing, and neither is reliable on e4b. Use a regex for outward-facing if anything; keep NEEDS-ADAM as human QC. Real Jev (needs #502 key, public data only, reports contain client/SP data so must be scrubbed) is BLOCKED-on-key: rerun `calibrate_triage.py` with JEV_ALLOW_CLOUD=1 after scrub to see if a bigger model separates NEEDS-ADAM. Not worth doing before Step 3.
 
+### Step 6: native Ollama /v1/systemone + nimble / tev1 recalibration (9/30 ~6:20 AM): NOTHING CLEARS, still NOT WIRED
+Ollama upgraded 0.34.4 -> 0.35.0 (`brew upgrade --cask ollama-app`; the CLI is a symlink into Ollama.app; service came back, gemma4:e4b still loads). Pulled `nimble` (9.0B Q8, qwen35 family, 9.5 GB) and `tev1` (4.5 GB, the 4B). Native endpoint `POST localhost:11434/v1/systemone` works with the SDK unchanged (`TYPESAFE_BASE_URL=http://127.0.0.1:11434`, `model=` passed through, any key). Scripts take `JEV_NATIVE_MODEL=<model>` (skips the shim, writes `*-results-<model>.json`) and `JEV_TIMEOUT`. Same seed 7, 12/area; tasks.db/reports.md grew slightly, so n differs by 1-11 (noted per row). Native `confidence` is NOT the shim's: it is not the top probability (p=0.83 gave conf 0.33). Original e4b results kept as `*-e4b-orig.json`. The e4b column was not rerun today.
+
+| Use (baseline) | e4b shim (9/29) | nimble native | tev1 native |
+|---|---|---|---|
+| Area acc (n=75/76/76) | 58.7% | 56.6% | 52.6% |
+| Area right at conf>=0.8 | 62% (n=69) vs 17% below | 62% (n=37) vs 51% below | 68% (n=28) vs 44% below |
+| Area right at conf>=0.9 | 62% vs 42% | 64% (n=25) | 73% (n=15) |
+| Priority acc (majority P2 = 46-48%) | 41% | 53.9% | 46.1% |
+| Priority conf separation | 50% vs 29% at 0.8 | none (0% at >=0.7, n=4) | none (conf never >=0.6) |
+| Triage verdict acc (n=76/86/87; always-DONE baseline 66% / 58% / 57%) | 25% | 43% | 39% |
+| Triage right at conf>=0.8 | 27% (at 0.9) | 29% (n=14) | 30% (n=10) |
+| p50 latency | 655 ms triage | 1.8 s area, 1.4 s triage | 0.9 s area, 0.8 s triage |
+
+Verdicts against the existing gates:
+- **Area autotag: NO.** Best case tev1 at conf>=0.9 is 73% on 15 rows: more than 1 in 4 silent wrong tags on a tiny sample. Neither decision model beat gemma4:e4b on overall accuracy. Stays unwired.
+- **Priority: NO.** nimble beats the majority class by ~8 pts (53.9% vs 46%) but confidence does not separate right from wrong, so there is nothing to gate on.
+- **Fleet triage: NO.** Both beat e4b (43% / 39% vs 25%) but both sit below the always-DONE baseline (58%), and conf>=0.8 is worse than overall. Keep the worker-written status plus human QC; regex for outward-facing.
+- No model clears a gate, so no wiring proposal. If one later does, the change is small: set `JEV_NATIVE_MODEL`, point `TYPESAFE_BASE_URL` at :11434, and gate `t add --auto` on a threshold measured on the native confidence scale, with human confirm below it.
+- **shim.py is redundant for serving** (native /v1/systemone exists on 0.35+ for any local model). Not deleted: it is the only path giving gemma4 the calibrated `decide` logprob confidence, and test_shim.py covers it.
+- **A TypeSafe account / API key (#502) is no longer needed if native wins.** The native endpoint accepts any key and nothing leaves the machine. Step 1 and Step 3 (cloud Jev head-to-head) only matter as a ceiling reference, which these numbers do not justify.
+
 ## Step 3: head-to-head bench (after the key)
 Rerun the 156-task area benchmark from `~/forge/decide/bench.py` on real Jev and compare accuracy, latency, and calibration (right-rate above vs below 0.8 confidence) with decide e4b (50.6%, 57% vs 17%). OPSEC: GYA/client and Sugar Pills rows get scrubbed or skipped before anything goes to the cloud.
 
