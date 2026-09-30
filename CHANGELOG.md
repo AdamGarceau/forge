@@ -2,6 +2,18 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.9.1] — 2026-09-30
+
+Fixes from the first real Retro-Audit run.
+
+### Fixed
+- **Merge target when a v1 exists:** leave it, write `FORGE-REVIEW-v2.md`, and note which findings moved from READ to RAN.
+- **R4 no longer reads as alarm on early repos:** each threat gets a severity and a defect vs not-built-yet column, and the report shows the defect count next to `threats_open`.
+- **R3 Highs are verified by the orchestrator;** a High that rests on unchecked upstream behaviour drops to Medium.
+- **R5 on a foreign repo:** `gsd-nyquist-auditor` needs a GSD phase, so quick tests are hand-written in `retro-audit-tests/` in the clone; stand-in harnesses count as RAN with their limits recorded.
+- **R1 build practice:** match the toolchain the docs prescribe, build with `-j2 -k 0`, try the second compiler before calling it broken, reuse one container.
+- **Where FORGE-STATE.md lives** for a review (the review directory), skip `*.env`, and foreground Agent calls in headless runs.
+
 ## [1.9.0] — 2026-09-30
 
 Retro-Audit: Forge on a codebase it did not build. Forge's own builds get code review, a security gate, and verification from GSD in Stage 2; a repo someone else built never went through Stage 2, so a Forge review of it read the code and judged the product but never built, ran, or security-audited it.
