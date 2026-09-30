@@ -1,0 +1,21 @@
+[project]
+name = "jev-lab"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Adam Garceau", email = "adam@grabyourassets.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "jev>=0.3.0",
+    "numpy>=2.5.3",
+    "scikit-learn>=1.9.1",
+]
+
+[project.scripts]
+jev-lab = "jev_lab:main"
+
+[build-system]
+requires = ["uv_build>=0.12.8,<0.13.0"]
+build-backend = "uv_build"
