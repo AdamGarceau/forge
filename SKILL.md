@@ -20,7 +20,7 @@ description: >
 
 > **The claim:** One-shot software, even if you can't code. Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
 
-> **Version 1.8.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+> **Version 1.9.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
 
 > **Inherits `FAMILY-RULES.md`** (this directory; F0 to F16): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
 
@@ -75,6 +75,31 @@ Inherited rules are one line each and point at `FAMILY-RULES.md`; software-speci
 
 
 14. **Forge does not stop. `forge-state` is how it keeps going** (F7). The rule was born here, when a real run sat at Stage 2 for a day with two blocking gates owed and nothing noticed; F7 carries the mechanism, the three STOPs, and the paste block, and every family inherits them. Software-specific: **this narrows the per-stage approval beat in Stage 2, and deliberately so.** That beat exists for one thing, showing the GSD PLAN before an executor touches code, plus the three STOPs. It was never meant to make every stage boundary a request for permission; a Forge run reports at boundaries and keeps moving. A new family is registered in `FAMILIES` in `scripts/forge_state.py` before its first run.
+
+15. **Retro-Audit is a fourth mode, for code Forge did not build.** When the founder hands Forge an existing codebase ("run this repo through Forge", "find the holes in", "audit their app"), the product stages still apply as lenses, and the technical checks GSD gives Forge's own builds in Stage 2 get run on that codebase too. Full procedure: **Retro-Audit mode** below.
+
+## Retro-Audit mode (Forge on a codebase it did not build)
+
+Stage 2 is where Forge's own builds get their technical checks: `/gsd-execute-phase` runs a code review after every phase, blocks on open security threats, and verifies each phase against its goal. A codebase someone else built never passed through Stage 2, so a review that only READS it covers the product and misses the code. (Found 2026-09-30 on a third-party review: the product holes held up, but nothing was built, run, or security-audited.) Retro-Audit closes that gap.
+
+**Trigger:** "review/audit this repo", "run X through Forge", "find the holes in", or any codebase the founder did not build with Forge. Record it with `forge-state init --mode retro-audit`.
+
+**Ground rules**
+- **Read-only toward the owner.** Clone to a local review directory (`<reviews>/<name>/repo`). Never push, open issues or PRs, comment, star, or fork. `.planning/`, tests, and fixes Forge writes stay in the local clone; nothing leaves the machine unless the founder shares it.
+- **Every finding is tagged RAN or READ.** RAN = reproduced by building, running, or a test. READ = static reading only. The report header states which lanes ran and which could not run and why (e.g. "bootc image needs Linux + podman; not booted"). A READ finding is never written as if it were proven.
+
+**Product lanes** (the existing stages, applied as lenses): Stage 0 who it is for and what would kill it; Stage 1 market, competitors, and real demand signal; Stage 3 synthetic walkthroughs of the ACTUAL flows in the code, accessibility persona included; Stage 4/5 install, update, and support burden for a real user.
+
+**Technical lanes** (what Stage 2 would have run):
+1. **R1 Build + run.** Build it the way its README says (container or VM when the host can't), run its test suite, launch it and exercise the core flow. Log to `TECH/BUILD-LOG.md`: commands, pass/fail counts, what broke. A project that does not build from its own instructions is a finding.
+2. **R2 Map.** `/gsd-map-codebase` (or the `gsd-codebase-mapper` agent) in the local clone, so the reviewers work from a map rather than a skim.
+3. **R3 Code review.** The `gsd-code-reviewer` agent (the same one `/gsd-code-review` runs) over the source, highest-risk first: entry points, auth and permissions, install and update paths, input parsing, anything that runs as root. Output `TECH/REVIEW.md`. `/code-review` is an acceptable substitute where GSD is absent.
+4. **R4 Security.** No GSD plan exists, so there is no threat model to audit against: write one first (`TECH/THREAT-MODEL.md`, per trust boundary, attackers taken from the product's real users, e.g. a child trying to get around parental controls), then run the `gsd-security-auditor` agent against it at ASVS level 1. Output `TECH/SECURITY.md` with `threats_open`.
+5. **R5 Claims vs tests.** List what the README and docs promise, map each promise to a test that proves it, and flag the untested ones (`TECH/TEST-GAPS.md`). Where a quick test can settle a claim, write it in the local clone and run it (the Nyquist pass, pointed at their claims).
+
+**Merge.** One ranked hole list in `FORGE-REVIEW.md`. Rank every finding, product or technical, by what it costs the end user, not how bad it looks to an engineer. Each finding gets what, evidence (file:line or command output), RAN/READ, why it matters to the user, and the smallest fix. Then "what's strong" (credit real craft) and the next Forge stage the owner should run.
+
+**Gate:** the audit is done when R1-R5 each either produced an artifact or recorded why it could not run, and every finding carries its RAN/READ tag. Reggie gets one line, as at every stage.
 
 ## Stage G — GTM & FOUNDER-RESOURCE FIT (the FIRST gate: can this founder reach a market at all?)
 

@@ -8,7 +8,7 @@
 
 *You've got an idea for an app, a website, a tool, whatever. You're not a programmer (or you are, and you're tired). Forge takes the idea and hands you back something real, tested, and worth showing people. The twist: before it builds a single thing, it checks whether you should build it at all. Sometimes the answer is no. It'll tell you. For free. To your face.*
 
-![version](https://img.shields.io/badge/version-1.8.0-orange)
+![version](https://img.shields.io/badge/version-1.9.0-orange)
 ![stages](https://img.shields.io/badge/pipeline-6_gated_stages-orange)
 ![verdicts](https://img.shields.io/badge/verdicts-self_%7C_market_%7C_don't-orange)
 ![built for](https://img.shields.io/badge/built_for-Claude_Code-black)

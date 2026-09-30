@@ -2,6 +2,13 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.9.0] — 2026-09-30
+
+Retro-Audit: Forge on a codebase it did not build. Forge's own builds get code review, a security gate, and verification from GSD in Stage 2; a repo someone else built never went through Stage 2, so a Forge review of it read the code and judged the product but never built, ran, or security-audited it.
+
+### Added
+- **Rule 15 and the `Retro-Audit mode` section in `SKILL.md`.** Product lanes (Stages 0, 1, 3, 4/5 as lenses) plus five technical lanes: R1 build + run from the README and run the test suite, R2 `/gsd-map-codebase`, R3 `gsd-code-reviewer` over the highest-risk source, R4 write a threat model then run `gsd-security-auditor` against it, R5 map README claims to tests and flag the untested ones. Every finding is tagged RAN or READ; the audit is done when each lane produced an artifact or recorded why it could not run. Read-only toward the owner: everything stays in the local clone. Track it with `forge-state init --mode retro-audit`.
+
 ## [1.8.0] — 2026-09-30
 
 Sync with the maintainer's live skill: the stall monitor learns to triage, Forge asks what a build is for before it rules on it, and two months of run learnings land in the public tree.
