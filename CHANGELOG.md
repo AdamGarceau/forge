@@ -8,6 +8,7 @@ Retro-Audit: Forge on a codebase it did not build. Forge's own builds get code r
 
 ### Added
 - **Rule 15 and the `Retro-Audit mode` section in `SKILL.md`.** Product lanes (Stages 0, 1, 3, 4/5 as lenses) plus five technical lanes: R1 build + run from the README and run the test suite, R2 `/gsd-map-codebase`, R3 `gsd-code-reviewer` over the highest-risk source, R4 write a threat model then run `gsd-security-auditor` against it, R5 map README claims to tests and flag the untested ones. Every finding is tagged RAN or READ; the audit is done when each lane produced an artifact or recorded why it could not run. Read-only toward the owner: everything stays in the local clone. Track it with `forge-state init --mode retro-audit`.
+- **Speed-run means `/gsd-quick --validate`.** Bare `/gsd-quick` skipped plan checking, verification, and the security gate. Speed-runs now use `--validate`, and a speed-run task that touches auth, secrets, money, network input, or root gets a `gsd-security-auditor` pass on its PLAN.md before the build counts as done.
 
 ## [1.8.0] — 2026-09-30
 

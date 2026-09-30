@@ -242,6 +242,7 @@ one-exact-action ops asks, fallbacks for every automation). They are how a
 non-coder founder stays in command of a build.
 
 - `mkdir` the project, `cd` in, add it to your workspace registry, then run GSD: `/gsd-new-project` (full mode) or `/gsd-quick`-style compressed phases (speed-run). The PROJECT.md context comes FROM Stage 1 artifacts — segments, language bank, and top objections become requirements (e.g., a privacy-tool survey where "your data never leaves your computer" became a UI requirement, not a marketing line).
+- **Speed-run means `/gsd-quick --validate`, never bare `/gsd-quick`.** Bare quick still runs the code review, but it skips plan checking, post-build verification, and the security gate that `/gsd-execute-phase` enforces. `--validate` restores the checking and verification. For security: when a speed-run task touches auth, secrets, money, network input, or anything that runs as root, spawn the `gsd-security-auditor` agent on that task's PLAN.md before calling the build done; a personal tool with none of those skips it. Log the audit (or the reason it was skipped) in FORGE-STATE.md.
 - Front-end work loads `web-design-craft`; anything with charts loads `dataviz`. Accessibility is a standing requirement (build as if a blind / low-vision user is a primary user) — build to it, and it gets gated in Stage 3.
 - Deploy/hosting per project type (`wrangler pages deploy` pattern; the deploy config lives in the repo like Deadreckon's, so redeploys are one command).
 
@@ -300,7 +301,7 @@ Synthetic users can't feel glare, gloves, or GPS drift. You use the app on the r
 | H Hunt+Tournament | Skip (idea in hand) | Skip unless hunting | **Required** (find the idea) |
 | 0 Kill criteria | Required (it's one paragraph) | Required | Pre-set in the master prompt |
 | 1 Validate | May compress to panel + survey if the CEP signal is obvious; verdict still honest | All four artifacts + red-team swarm | All four + red-team swarm + gap map; DON'T BUILD still stops the run |
-| 2 Build | gsd-quick / few phases | Full GSD phases + verification | Full GSD + verification |
+| 2 Build | gsd-quick --validate (+ security audit if it touches auth/secrets/money/network/root) | Full GSD phases + verification | Full GSD + verification |
 | 2B Brand | Skip | Name/domain/logo/type/guidelines | Required |
 | 3 Usability | 2 personas, gate 8/10 | Full panel, gate 9/10 | Full panel + red-team swarm |
 | 4 Field test | 1 pass + punch list | 2 passes minimum | Deferred to founder post-run |
