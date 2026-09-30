@@ -2,6 +2,25 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.8.0] — 2026-09-30
+
+Sync with the maintainer's live skill: the stall monitor learns to triage, Forge asks what a build is for before it rules on it, and two months of run learnings land in the public tree.
+
+### Added
+- **Stage 0A, "ask what it's for" (blocking).** Five intake questions before any research or verdict (who it's for beyond you, any equity or revenue stake, would you mind a competitor shipping it, a second human operator, what you'd regret). Answers go in `00-idea.md` under Intended use and are the recorded basis for the run mode. A verdict change re-opens the run and expires every override granted under the old verdict. Born when a run was ruled BUILD FOR SELF and speed-run, then turned out to be a business.
+- **`forge-state park "why"` / `unpark` / `focus [--off]` / `scan --park-overflow`.** A run can be parked (scan never prints it; recording any gate unparks it) or focused (pinned first in the scan). Bookkeeping never touches the `updated` idle clock.
+- **The scan's WIP cap: `scan` prints at most 3 stalled runs** (focused, then FAILED, then stalest) plus one counted line; `--cap N` and `--all` override. Sixteen always-red lines trained everyone to scroll past them.
+- **`forge-state watchdog [--refresh] [--json] [--no-model] [--hook-lines]`** (`scripts/forge_watchdog.py`, with `scripts/test_forge_watchdog.py`, 16 tests). Says why each stalled run stopped: `BLOCKED_ON_HUMAN`, `BLOCKED_EXTERNAL`, `DONE_UNRECORDED`, `ABANDON`, or `RESUMABLE`, from deterministic rules. An optional local model (`FORGE_LANE`) only phrases the reason and can only make a verdict more conservative. Read-only. Report and handoff paths are `FORGE_WATCHDOG_REPORT` and `FORGE_HANDOFF_DIR`.
+- **`cfo` family** registered in `forge_state.py` (`forge-state init --family cfo`).
+- **F4: standard external-signal sources.** Every research stage that mines real voices includes YouTube comments (Data API) and Reddit through a grounded search lane, or declares them dry with the queries tried.
+- **`SKILL.md` Log**: a Stage 3 score of 9.0 collapsed on first human contact. Stage 3 decides whether a build is worth a human's ten minutes and never replaces Stage 4; ask "how many rows prove a human used this"; exercise every never-executed path; run Stage 4 on the user's own device.
+
+### Changed
+- `LEARNINGS.md` gains the run and instrument learnings from two months of real runs, genericized: verification that passes what a human fails, the deploy-root leak, the version-control precondition, the synth-survey saturation, the WIP-cap-as-silencer failure, and the watchdog's rule-order bug.
+- `SKILL.md` Stage 1 expert panel falls back to running the panel inline when `sc:business-panel` is not installed (F12).
+- `FAMILY-RULES.md` F7 documents the WIP cap, the idle-clock rule, and the watchdog.
+- `forge_state.py`: the tracked-run scan is factored into `stalled_runs()` so the watchdog reuses the same walk; output is unchanged.
+
 ## [1.7.0] — 2026-09-11
 
 The predictions get graded. Reggie wrote one at every stage and every gate scored every artifact; nobody scored either, so the gates stayed where they were first set.

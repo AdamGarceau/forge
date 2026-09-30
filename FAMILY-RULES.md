@@ -28,6 +28,7 @@
 | client | `/forge-client` | `CLIENT-STATE.md` | `<clients root>/<slug>` | `--family client` |
 | ads | `/forge-ads` | `ADS-STATE.md` | `<property or client root>/ads/<slug>` | `--family ads` |
 | job | `/job-apply` | `JOB-STATE.md` | `<job-search root>/output/<slug>` | `--family job` |
+| cfo | `/forge-cfo` (`--lane tax|close|cfo|yearend|all`) | `CFO-STATE.md` | `<client root>/cpa` | `--family cfo` |
 
 Routing between families: software builds go to `/forge`, games to `/forge-games`,
 marketing plans and channel asks to `/forge-gtm`, "verify everything / research
@@ -133,6 +134,22 @@ same style as BLOCKING. `next` never gates on it; `scan --verbose` counts runs
 past Stage 1 with no entry. The verbatim goes in `--said`, or the path to the
 file that holds it.
 
+**Standard external-signal sources.** Every research stage that mines real voices, in
+every family (Stage 1 CEP, Stage H pain hunt, `/forge-research`, audience work in the
+GTM and content families), includes both of these lanes. It isn't done until both are in
+the artifact or declared dry with the queries tried:
+- **YouTube comments.** Use the Data API, not a scraper: `search.list` for the top videos
+  on the topic, then `commentThreads.list` on each (key in an environment variable such as
+  `YOUTUBE_API_KEY`, never in a file you commit). Keep verbatim quotes with the video URL
+  and like counts.
+- **Reddit through a grounded search lane.** Generic scrapers are routinely blocked on
+  reddit.com, and a search aggregator gives you Reddit only second-hand. Run a model with
+  search grounding scoped to `site:reddit.com` for the subreddits named in the research
+  brief. Keep quotes plus thread URLs, and re-verify each key quote against the URL before
+  it counts (F4, and Stage H's independent-verify step).
+- Confidentiality (F13): a hosted lane gets public research queries only. Never client
+  data, and never edgy or policy-adjacent topics; those stay local.
+
 ## F6. Gates block, `forge-state` is the mechanism, the manifest is the resume-cold document
 
 - A stage's exit criteria unmet = the next stage does not start. `forge-state gate`
@@ -168,7 +185,28 @@ forge-state status                       # every gate, what blocks, how long owe
 forge-state init [--family …]            # once, at Stage 0, in the run directory
 forge-state verdict "…" [--close]        # the verdict; --close ends the run
 forge-state scan                         # session-start hook; names runs idle a day+ with a gate owed; silent when clean
+forge-state park "why"                   # this run stops nagging: scan never prints it (unpark, or any recorded gate, brings it back)
+forge-state focus [--off]                # pin this run to the top of the capped scan list: one of the 3 actually in flight
+forge-state scan --park-overflow         # park every stalled run past the cap, in one move
+forge-state watchdog [--refresh]         # WHY each stalled run stopped: a verdict per run, rules first
 ```
+
+- **The WIP cap is 3.** `scan` prints at most three stalled runs (focused first, then
+  a FAILED gate, then the stalest) and one line counting the rest. It was printing
+  sixteen. Nobody can act on sixteen, so the list trained everyone to scroll past it,
+  which is the exact failure the scan line was built to fix. A run you have not touched
+  in a week is not a queue item, it is a decision you have not made: `park` it with the
+  reason, or `focus` it and do it. Parked means no due date, does not print, not
+  deleted. `--all` still lists everything. Parking is not triage: a bulk
+  `--park-overflow` with one identical reason string is a silencer, so read each run
+  before you park it.
+- **`updated` is the idle clock, and only work may move it.** `park`, `unpark` and
+  `focus` write without touching it, or parking a run idle 30 days and unparking it next
+  week would launder the neglect into "idle 7".
+- **`forge-state watchdog` says why a run stopped.** Deterministic rules (failed gate,
+  explicit block signal, human-only stage, third-party wait, work done but unrecorded)
+  decide the verdict; a local model only phrases the reason and can only make the
+  verdict more conservative. It never writes a manifest.
 
 - **Every Forge session begins with `forge-state next` in the run directory.** Its
   exit code IS the gate: 0 nothing blocks, 2 a blocking stage is owed (run it), 3 a

@@ -20,7 +20,7 @@ description: >
 
 > **The claim:** One-shot software, even if you can't code. Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
 
-> **Version 1.5.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+> **Version 1.8.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
 
 > **Inherits `FAMILY-RULES.md`** (this directory; F0 to F16): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
 
@@ -113,6 +113,35 @@ Forge's default entry is Stage 0 with an idea already in hand. **Run Stage H fir
 3. **Tournament.** Judge personas (5) score every surviving candidate on **pain, urgency, reachability, willingness-to-pay, buildability, incumbent weakness**. The top few each get an **advocate agent + a skeptic agent** arguing it; a panel of fresh judges votes a winner. Score population-weighted, not vote-flattered; a tie or a weak field is a valid "no clear winner — here's why" output. Output: `H3-tournament.md` with the scored board and the winner + margin.
 4. **Handoff.** The winning problem becomes the Stage 0 idea. Write it into `00-idea.md` in the founder's framing, carry the verified quotes forward as the Stage 1 language-bank seed — then run Stage 1 validation on it HONESTLY. Winning a tournament is not a market verdict; the winner still faces the three-verdict gate. A hunt that ends in DON'T BUILD on its own tournament winner is a successful hunt (the gap map still ships).
 
+## Stage 0A — Ask what it's for (before ANY research or verdict). BLOCKING.
+
+A run ruled BUILD FOR SELF and speed-run (skipping GTM, usability, and field-test
+gates) can turn out to be wrong when the founder later says *"this is for market,
+I'm getting equity in this business."* The verdict was not wrong given what Forge
+knew. **Forge just never asked.** A wrong run mode is the most expensive error in
+the pipeline because it silently deletes whole stages, and the gate overrides get
+written down as if they were reasoned.
+
+These questions are cheap (one round trip) and the answers decide the entire run.
+Ask them **before** Stage 1. Do not infer the answers from the fact that the first
+user is the founder; almost every product starts with one user.
+
+1. **Who is this for beyond you?** Only me / me and one business / customers.
+2. **Do you have or expect a financial stake** in what this serves: equity, revenue
+   share, a client contract? (Equity or revenue share means never BUILD FOR SELF.)
+3. **Would you be upset if someone else shipped this and sold it?**
+4. **Is there a real operator other than you who has to use it**, and will they be
+   trained or expected to figure it out? (A second human operator means the field
+   test and usability gates are blocking, full stop.)
+5. **What would make you regret building this** in six months?
+
+Record the answers verbatim in `00-idea.md` under **Intended use**, and cite them
+as the basis for the run mode in FORGE-STATE.md. If the answers change mid-run, the
+verdict is re-opened and every override granted under the old verdict **expires**:
+write the change and the newly-owed stages into FORGE-STATE.md rather than carrying
+on. A blanket "I'm away, you can do this" is scoped to the run mode it was given
+under; it does not survive a verdict change.
+
 ## Stage 0 — Capture + Kill Criteria (before ANY research)
 
 Write `<project-or-scratch>/validation/00-idea.md`:
@@ -126,7 +155,7 @@ Also create `<project>/FORGE-STATE.md` (rule 8) next to it: stage 0, mode pendin
 
 Run three lenses, cheapest-appropriate models, artifacts numbered into `validation/`:
 
-1. **Expert panel** — invoke `sc:business-panel` on the idea (main-model judgment work). Output: `01-expert-panel.md` with consensus, disagreements, and the panel's verdict lean.
+1. **Expert panel** — invoke `sc:business-panel` on the idea if installed; otherwise run the panel inline with the main model (F12): 4-6 named expert lenses (growth, unit economics, ops/maintenance burden, incumbent risk, distribution) argued against each other, failure-first. Output: `01-expert-panel.md` with consensus, disagreements, and the panel's verdict lean.
 2. **CEP/ICP external-signal research** — invoke `cep` (or a research agent with its method): mine forums, reviews, news, Q&A for the trigger situations, segments with share-of-voice, verbatim language bank. Real quotes with URLs only; dry sources declared dry. Output: `02-cep-external-signal.md`.
 3. **Synth survey** — invoke `synth-survey`: personas loaded from the closest persona-library file and extended FROM the CEP segments (F8, load and extend; `personas/README.md` has the format), `n=1000`, **weights = population share-of-voice** (include the founder's persona at its real share; owner-weighted views may be shown only as a labeled secondary number). Output: `03-synth-survey-report.md`, and save the persona definitions themselves to `validation/03-personas.md` — Stages 2-3 reuse them. Never a `/tmp` path; temp files break resume-cold (rule 4).
 
@@ -251,3 +280,51 @@ Synthetic users can't feel glare, gloves, or GPS drift. You use the app on the r
 | 3 Usability | 2 personas, gate 8/10 | Full panel, gate 9/10 | Full panel + red-team swarm |
 | 4 Field test | 1 pass + punch list | 2 passes minimum | Deferred to founder post-run |
 | 5 Ship | Install into life | web-launch + copy pipeline | Launch + founder video + stranger-test RECAP.html |
+
+---
+
+## Log
+
+Mistakes and wins from real runs. Append in the same session they happen. Newest first.
+
+### A 9.0 at Stage 3 collapsed on first human contact
+
+**The failure.** An ops app cleared Stage 3 usability at **9.0** and was then opened by
+its one real user on a real phone. The user returned **21 rulings across two sessions**,
+none of which the synthetic panel had surfaced: a horizontal-scrolling nav strip, a stale
+stylesheet, a settings page readable by any signed-in viewer, and a `products` table whose
+29 rows were 17 categories wearing products' clothes.
+
+**Root cause, and it is a process bug not a panel bug.** Synthetic respondents evaluate copy
+and concept. They cannot hold a 390px phone, cannot be served a cached CSS file, and cannot
+type a URL to probe a read gate. Stage 3 was being treated as a *substitute* for Stage 4
+rather than a filter into it.
+
+**Rule changes this produces:**
+
+1. **Stage 3's gate decides whether the build is worth a human's ten minutes. It never
+   replaces Stage 4.** A 9/10 is permission to field-test, not evidence of usability. Do not
+   let a high synth score shorten or skip Stage 4, even on a speed-run.
+2. **New Stage 3 exit check: "how many rows prove a human used this?"** Before accepting any
+   feature list for a build with users, query the table that records real use. The app above
+   had **zero rows in its share-link table** three days in: ten features were specced against
+   zero evidence. Getting the first real user in outranks every item on that list.
+3. **A zero-use feature is untested regardless of the suite.** A "mint a link" button would
+   have emitted `http://127.0.0.1:5001/...`, a dead link, because a hardcoded config default
+   silently defeated the code's own request-host fallback. 202 passing tests and a 9.0 synth
+   score both missed it, because nobody had ever pressed it. **Exercise every
+   never-once-executed path on real hardware before Stage 5.**
+4. **Stage 4 must be run on the user's own device, not a simulator.** The three highest-value
+   findings (stale CSS, nav overflow, dead link base) were invisible anywhere except the
+   actual phone behind the actual tunnel.
+
+**The win worth repeating.** *Check whether the mechanism already exists, and check the data
+before believing a table name.* Across two sessions this found five mechanisms already built
+and stopped two rulings being built on a misread table. Applied to a vendor invoice, the same
+habit turned a remembered per-device price into the documented truth: a cheaper plan billed
+on 50 devices of which only 43 had ever transacted. **Read the primary document; the
+remembered number is a hypothesis.**
+
+**A subagent given the north star rather than the checklist** found a settings read-gate
+security bug while doing unrelated nav work. Hand delegates the standard, not only the task
+list.
