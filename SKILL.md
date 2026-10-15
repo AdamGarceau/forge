@@ -20,7 +20,7 @@ description: >
 
 > **The claim:** One-shot software, even if you can't code. Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
 
-> **Version 1.5.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+> **Version 1.9.1** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
 
 > **Inherits `FAMILY-RULES.md`** (this directory; F0 to F16): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
 
@@ -76,6 +76,33 @@ Inherited rules are one line each and point at `FAMILY-RULES.md`; software-speci
 
 14. **Forge does not stop. `forge-state` is how it keeps going** (F7). The rule was born here, when a real run sat at Stage 2 for a day with two blocking gates owed and nothing noticed; F7 carries the mechanism, the three STOPs, and the paste block, and every family inherits them. Software-specific: **this narrows the per-stage approval beat in Stage 2, and deliberately so.** That beat exists for one thing, showing the GSD PLAN before an executor touches code, plus the three STOPs. It was never meant to make every stage boundary a request for permission; a Forge run reports at boundaries and keeps moving. A new family is registered in `FAMILIES` in `scripts/forge_state.py` before its first run.
 
+15. **Retro-Audit is a fourth mode, for code Forge did not build.** When the founder hands Forge an existing codebase ("run this repo through Forge", "find the holes in", "audit their app"), the product stages still apply as lenses, and the technical checks GSD gives Forge's own builds in Stage 2 get run on that codebase too. Full procedure: **Retro-Audit mode** below.
+
+## Retro-Audit mode (Forge on a codebase it did not build)
+
+Stage 2 is where Forge's own builds get their technical checks: `/gsd-execute-phase` runs a code review after every phase, blocks on open security threats, and verifies each phase against its goal. A codebase someone else built never passed through Stage 2, so a review that only READS it covers the product and misses the code. (Found 2026-09-30 on a Linux-for-kids review: the product holes held up, but nothing was built, booted, or security-audited.) Retro-Audit closes that gap.
+
+**Trigger:** "review/audit this repo", "run X through Forge", "find the holes in", or any codebase the founder did not build with Forge. Record it with `forge-state init --mode retro-audit` run from the review directory (`~/forge-reviews/<name>/`), so FORGE-STATE.md lives beside the report, not inside the clone.
+
+**Ground rules**
+- **Read-only toward the owner.** Clone to a local review directory (`~/forge-reviews/<name>/repo`). Never push, open issues or PRs, comment, star, or fork. `.planning/`, tests, and fixes Forge writes stay in the local clone; nothing leaves the machine unless the founder shares it.
+- **Skip `*.env` files** (the secrets hook blocks them even when they are only template variables); say so in the report header.
+- **Headless runs (`claude -p`):** spawn Agent calls in the foreground (`run_in_background: false`); background notifications never arrive there.
+- **Every finding is tagged RAN or READ.** RAN = reproduced by building, running, or a test. READ = static reading only. The report header states which lanes ran and which could not run and why (e.g. "bootc image needs Linux + podman; not booted"). A READ finding is never written as if it were proven.
+
+**Product lanes** (the existing stages, applied as lenses): Stage 0 who it is for and what would kill it; Stage 1 market, competitors, and real demand signal; Stage 3 synthetic walkthroughs of the ACTUAL flows in the code, accessibility persona included; Stage 4/5 install, update, and support burden for a real user.
+
+**Technical lanes** (what Stage 2 would have run):
+1. **R1 Build + run.** Build it the way its README says (container or VM when the host can't), run its test suite, launch it and exercise the core flow. Log to `TECH/BUILD-LOG.md`: commands, pass/fail counts, what broke. A project that does not build from its own instructions is a finding. Match the toolchain its docs prescribe, not whatever base its Containerfile uses. Build with `-j2 -k 0` (default parallelism OOM-kills sanitizer builds in a small Docker VM, and `-k 0` keeps one failing target from hiding the rest). Try the second compiler before calling the build broken. Keep one `docker run -d ... sleep` container and `docker exec` into it instead of reinstalling per attempt. Note host vs target arch.
+2. **R2 Map.** `/gsd-map-codebase` (or the `gsd-codebase-mapper` agent) in the local clone, so the reviewers work from a map rather than a skim.
+3. **R3 Code review.** The `gsd-code-reviewer` agent (the same one `/gsd-code-review` runs) over the source, highest-risk first: entry points, auth and permissions, install and update paths, input parsing, anything that runs as root. Output `TECH/REVIEW.md`. `/code-review` is an acceptable substitute where GSD is absent. The orchestrator verifies every High itself; a High that rests on upstream behaviour not in the repo (and not checked) drops to Medium.
+4. **R4 Security.** No GSD plan exists, so there is no threat model to audit against: write one first (`TECH/THREAT-MODEL.md`, per trust boundary, attackers taken from the product's real users, e.g. a child trying to get around parental controls), then run the `gsd-security-auditor` agent against it at ASVS level 1. Output `TECH/SECURITY.md` with `threats_open`. Give each threat a severity and a **defect vs not-built-yet** column: an early-stage repo counts every absent control as open (19 of 24 on the first run), so the merge reports the defect count next to `threats_open`, never the raw count alone.
+5. **R5 Claims vs tests.** List what the README and docs promise, map each promise to a test that proves it, and flag the untested ones (`TECH/TEST-GAPS.md`). Where a quick test can settle a claim, write it in the local clone and run it (the Nyquist pass, pointed at their claims). `gsd-nyquist-auditor` needs a GSD phase a foreign repo lacks, so write these by hand in `retro-audit-tests/` in the clone. Stand-ins (a PAM file with the quoted lines, a JS harness that evaluates the real polkit rule) count as RAN; record their limits. Replace grep-the-source tests with behaviour tests wherever you can.
+
+**Merge.** One ranked hole list in `FORGE-REVIEW.md`. If a read-only v1 already exists, leave it and write `FORGE-REVIEW-v2.md`, noting which findings moved from READ to RAN. Rank every finding, product or technical, by what it costs the end user, not how bad it looks to an engineer. Each finding gets what, evidence (file:line or command output), RAN/READ, why it matters to the user, and the smallest fix. Then "what's strong" (credit real craft) and the next Forge stage the owner should run.
+
+**Gate:** the audit is done when R1-R5 each either produced an artifact or recorded why it could not run, and every finding carries its RAN/READ tag. Reggie gets one line, as at every stage.
+
 ## Stage G — GTM & FOUNDER-RESOURCE FIT (the FIRST gate: can this founder reach a market at all?)
 
 Forge historically validated PAIN and PRODUCT but never whether the founder can REACH a market. A perfectly validated product with no distribution is dead on arrival, so **GTM is founder-relative and chosen FIRST — it reshapes everything downstream, including whether to hunt a product yet.** Run Stage G before Stage H / Stage 0 on any build meant to reach anyone beyond the founder (i.e., every run except a pure personal-tool speed-run). Output: `validation/G-gtm-roadmap.md`.
@@ -113,6 +140,35 @@ Forge's default entry is Stage 0 with an idea already in hand. **Run Stage H fir
 3. **Tournament.** Judge personas (5) score every surviving candidate on **pain, urgency, reachability, willingness-to-pay, buildability, incumbent weakness**. The top few each get an **advocate agent + a skeptic agent** arguing it; a panel of fresh judges votes a winner. Score population-weighted, not vote-flattered; a tie or a weak field is a valid "no clear winner — here's why" output. Output: `H3-tournament.md` with the scored board and the winner + margin.
 4. **Handoff.** The winning problem becomes the Stage 0 idea. Write it into `00-idea.md` in the founder's framing, carry the verified quotes forward as the Stage 1 language-bank seed — then run Stage 1 validation on it HONESTLY. Winning a tournament is not a market verdict; the winner still faces the three-verdict gate. A hunt that ends in DON'T BUILD on its own tournament winner is a successful hunt (the gap map still ships).
 
+## Stage 0A — Ask what it's for (before ANY research or verdict). BLOCKING.
+
+A run ruled BUILD FOR SELF and speed-run (skipping GTM, usability, and field-test
+gates) can turn out to be wrong when the founder later says *"this is for market,
+I'm getting equity in this business."* The verdict was not wrong given what Forge
+knew. **Forge just never asked.** A wrong run mode is the most expensive error in
+the pipeline because it silently deletes whole stages, and the gate overrides get
+written down as if they were reasoned.
+
+These questions are cheap (one round trip) and the answers decide the entire run.
+Ask them **before** Stage 1. Do not infer the answers from the fact that the first
+user is the founder; almost every product starts with one user.
+
+1. **Who is this for beyond you?** Only me / me and one business / customers.
+2. **Do you have or expect a financial stake** in what this serves: equity, revenue
+   share, a client contract? (Equity or revenue share means never BUILD FOR SELF.)
+3. **Would you be upset if someone else shipped this and sold it?**
+4. **Is there a real operator other than you who has to use it**, and will they be
+   trained or expected to figure it out? (A second human operator means the field
+   test and usability gates are blocking, full stop.)
+5. **What would make you regret building this** in six months?
+
+Record the answers verbatim in `00-idea.md` under **Intended use**, and cite them
+as the basis for the run mode in FORGE-STATE.md. If the answers change mid-run, the
+verdict is re-opened and every override granted under the old verdict **expires**:
+write the change and the newly-owed stages into FORGE-STATE.md rather than carrying
+on. A blanket "I'm away, you can do this" is scoped to the run mode it was given
+under; it does not survive a verdict change.
+
 ## Stage 0 — Capture + Kill Criteria (before ANY research)
 
 Write `<project-or-scratch>/validation/00-idea.md`:
@@ -126,7 +182,7 @@ Also create `<project>/FORGE-STATE.md` (rule 8) next to it: stage 0, mode pendin
 
 Run three lenses, cheapest-appropriate models, artifacts numbered into `validation/`:
 
-1. **Expert panel** — invoke `sc:business-panel` on the idea (main-model judgment work). Output: `01-expert-panel.md` with consensus, disagreements, and the panel's verdict lean.
+1. **Expert panel** — invoke `sc:business-panel` on the idea if installed; otherwise run the panel inline with the main model (F12): 4-6 named expert lenses (growth, unit economics, ops/maintenance burden, incumbent risk, distribution) argued against each other, failure-first. Output: `01-expert-panel.md` with consensus, disagreements, and the panel's verdict lean.
 2. **CEP/ICP external-signal research** — invoke `cep` (or a research agent with its method): mine forums, reviews, news, Q&A for the trigger situations, segments with share-of-voice, verbatim language bank. Real quotes with URLs only; dry sources declared dry. Output: `02-cep-external-signal.md`.
 3. **Synth survey** — invoke `synth-survey`: personas loaded from the closest persona-library file and extended FROM the CEP segments (F8, load and extend; `personas/README.md` has the format), `n=1000`, **weights = population share-of-voice** (include the founder's persona at its real share; owner-weighted views may be shown only as a labeled secondary number). Output: `03-synth-survey-report.md`, and save the persona definitions themselves to `validation/03-personas.md` — Stages 2-3 reuse them. Never a `/tmp` path; temp files break resume-cold (rule 4).
 
@@ -188,6 +244,7 @@ one-exact-action ops asks, fallbacks for every automation). They are how a
 non-coder founder stays in command of a build.
 
 - `mkdir` the project, `cd` in, add it to your workspace registry, then run GSD: `/gsd-new-project` (full mode) or `/gsd-quick`-style compressed phases (speed-run). The PROJECT.md context comes FROM Stage 1 artifacts — segments, language bank, and top objections become requirements (e.g., a privacy-tool survey where "your data never leaves your computer" became a UI requirement, not a marketing line).
+- **Speed-run means `/gsd-quick --validate`, never bare `/gsd-quick`.** Bare quick still runs the code review, but it skips plan checking, post-build verification, and the security gate that `/gsd-execute-phase` enforces. `--validate` restores the checking and verification. For security: when a speed-run task touches auth, secrets, money, network input, or anything that runs as root, spawn the `gsd-security-auditor` agent on that task's PLAN.md before calling the build done; a personal tool with none of those skips it. Log the audit (or the reason it was skipped) in FORGE-STATE.md.
 - Front-end work loads `web-design-craft`; anything with charts loads `dataviz`. Accessibility is a standing requirement (build as if a blind / low-vision user is a primary user) — build to it, and it gets gated in Stage 3.
 - Deploy/hosting per project type (`wrangler pages deploy` pattern; the deploy config lives in the repo like Deadreckon's, so redeploys are one command).
 
@@ -246,8 +303,56 @@ Synthetic users can't feel glare, gloves, or GPS drift. You use the app on the r
 | H Hunt+Tournament | Skip (idea in hand) | Skip unless hunting | **Required** (find the idea) |
 | 0 Kill criteria | Required (it's one paragraph) | Required | Pre-set in the master prompt |
 | 1 Validate | May compress to panel + survey if the CEP signal is obvious; verdict still honest | All four artifacts + red-team swarm | All four + red-team swarm + gap map; DON'T BUILD still stops the run |
-| 2 Build | gsd-quick / few phases | Full GSD phases + verification | Full GSD + verification |
+| 2 Build | gsd-quick --validate (+ security audit if it touches auth/secrets/money/network/root) | Full GSD phases + verification | Full GSD + verification |
 | 2B Brand | Skip | Name/domain/logo/type/guidelines | Required |
 | 3 Usability | 2 personas, gate 8/10 | Full panel, gate 9/10 | Full panel + red-team swarm |
 | 4 Field test | 1 pass + punch list | 2 passes minimum | Deferred to founder post-run |
 | 5 Ship | Install into life | web-launch + copy pipeline | Launch + founder video + stranger-test RECAP.html |
+
+---
+
+## Log
+
+Mistakes and wins from real runs. Append in the same session they happen. Newest first.
+
+### A 9.0 at Stage 3 collapsed on first human contact
+
+**The failure.** An ops app cleared Stage 3 usability at **9.0** and was then opened by
+its one real user on a real phone. The user returned **21 rulings across two sessions**,
+none of which the synthetic panel had surfaced: a horizontal-scrolling nav strip, a stale
+stylesheet, a settings page readable by any signed-in viewer, and a `products` table whose
+29 rows were 17 categories wearing products' clothes.
+
+**Root cause, and it is a process bug not a panel bug.** Synthetic respondents evaluate copy
+and concept. They cannot hold a 390px phone, cannot be served a cached CSS file, and cannot
+type a URL to probe a read gate. Stage 3 was being treated as a *substitute* for Stage 4
+rather than a filter into it.
+
+**Rule changes this produces:**
+
+1. **Stage 3's gate decides whether the build is worth a human's ten minutes. It never
+   replaces Stage 4.** A 9/10 is permission to field-test, not evidence of usability. Do not
+   let a high synth score shorten or skip Stage 4, even on a speed-run.
+2. **New Stage 3 exit check: "how many rows prove a human used this?"** Before accepting any
+   feature list for a build with users, query the table that records real use. The app above
+   had **zero rows in its share-link table** three days in: ten features were specced against
+   zero evidence. Getting the first real user in outranks every item on that list.
+3. **A zero-use feature is untested regardless of the suite.** A "mint a link" button would
+   have emitted `http://127.0.0.1:5001/...`, a dead link, because a hardcoded config default
+   silently defeated the code's own request-host fallback. 202 passing tests and a 9.0 synth
+   score both missed it, because nobody had ever pressed it. **Exercise every
+   never-once-executed path on real hardware before Stage 5.**
+4. **Stage 4 must be run on the user's own device, not a simulator.** The three highest-value
+   findings (stale CSS, nav overflow, dead link base) were invisible anywhere except the
+   actual phone behind the actual tunnel.
+
+**The win worth repeating.** *Check whether the mechanism already exists, and check the data
+before believing a table name.* Across two sessions this found five mechanisms already built
+and stopped two rulings being built on a misread table. Applied to a vendor invoice, the same
+habit turned a remembered per-device price into the documented truth: a cheaper plan billed
+on 50 devices of which only 43 had ever transacted. **Read the primary document; the
+remembered number is a hypothesis.**
+
+**A subagent given the north star rather than the checklist** found a settings read-gate
+security bug while doing unrelated nav work. Hand delegates the standard, not only the task
+list.

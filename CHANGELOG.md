@@ -2,6 +2,45 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.9.1] — 2026-09-30
+
+Fixes from the first real Retro-Audit run.
+
+### Fixed
+- **Merge target when a v1 exists:** leave it, write `FORGE-REVIEW-v2.md`, and note which findings moved from READ to RAN.
+- **R4 no longer reads as alarm on early repos:** each threat gets a severity and a defect vs not-built-yet column, and the report shows the defect count next to `threats_open`.
+- **R3 Highs are verified by the orchestrator;** a High that rests on unchecked upstream behaviour drops to Medium.
+- **R5 on a foreign repo:** `gsd-nyquist-auditor` needs a GSD phase, so quick tests are hand-written in `retro-audit-tests/` in the clone; stand-in harnesses count as RAN with their limits recorded.
+- **R1 build practice:** match the toolchain the docs prescribe, build with `-j2 -k 0`, try the second compiler before calling it broken, reuse one container.
+- **Where FORGE-STATE.md lives** for a review (the review directory), skip `*.env`, and foreground Agent calls in headless runs.
+
+## [1.9.0] — 2026-09-30
+
+Retro-Audit: Forge on a codebase it did not build. Forge's own builds get code review, a security gate, and verification from GSD in Stage 2; a repo someone else built never went through Stage 2, so a Forge review of it read the code and judged the product but never built, ran, or security-audited it.
+
+### Added
+- **Rule 15 and the `Retro-Audit mode` section in `SKILL.md`.** Product lanes (Stages 0, 1, 3, 4/5 as lenses) plus five technical lanes: R1 build + run from the README and run the test suite, R2 `/gsd-map-codebase`, R3 `gsd-code-reviewer` over the highest-risk source, R4 write a threat model then run `gsd-security-auditor` against it, R5 map README claims to tests and flag the untested ones. Every finding is tagged RAN or READ; the audit is done when each lane produced an artifact or recorded why it could not run. Read-only toward the owner: everything stays in the local clone. Track it with `forge-state init --mode retro-audit`.
+- **Speed-run means `/gsd-quick --validate`.** Bare `/gsd-quick` skipped plan checking, verification, and the security gate. Speed-runs now use `--validate`, and a speed-run task that touches auth, secrets, money, network input, or root gets a `gsd-security-auditor` pass on its PLAN.md before the build counts as done.
+
+## [1.8.0] — 2026-09-30
+
+Sync with the maintainer's live skill: the stall monitor learns to triage, Forge asks what a build is for before it rules on it, and two months of run learnings land in the public tree.
+
+### Added
+- **Stage 0A, "ask what it's for" (blocking).** Five intake questions before any research or verdict (who it's for beyond you, any equity or revenue stake, would you mind a competitor shipping it, a second human operator, what you'd regret). Answers go in `00-idea.md` under Intended use and are the recorded basis for the run mode. A verdict change re-opens the run and expires every override granted under the old verdict. Born when a run was ruled BUILD FOR SELF and speed-run, then turned out to be a business.
+- **`forge-state park "why"` / `unpark` / `focus [--off]` / `scan --park-overflow`.** A run can be parked (scan never prints it; recording any gate unparks it) or focused (pinned first in the scan). Bookkeeping never touches the `updated` idle clock.
+- **The scan's WIP cap: `scan` prints at most 3 stalled runs** (focused, then FAILED, then stalest) plus one counted line; `--cap N` and `--all` override. Sixteen always-red lines trained everyone to scroll past them.
+- **`forge-state watchdog [--refresh] [--json] [--no-model] [--hook-lines]`** (`scripts/forge_watchdog.py`, with `scripts/test_forge_watchdog.py`, 16 tests). Says why each stalled run stopped: `BLOCKED_ON_HUMAN`, `BLOCKED_EXTERNAL`, `DONE_UNRECORDED`, `ABANDON`, or `RESUMABLE`, from deterministic rules. An optional local model (`FORGE_LANE`) only phrases the reason and can only make a verdict more conservative. Read-only. Report and handoff paths are `FORGE_WATCHDOG_REPORT` and `FORGE_HANDOFF_DIR`.
+- **`cfo` family** registered in `forge_state.py` (`forge-state init --family cfo`).
+- **F4: standard external-signal sources.** Every research stage that mines real voices includes YouTube comments (Data API) and Reddit through a grounded search lane, or declares them dry with the queries tried.
+- **`SKILL.md` Log**: a Stage 3 score of 9.0 collapsed on first human contact. Stage 3 decides whether a build is worth a human's ten minutes and never replaces Stage 4; ask "how many rows prove a human used this"; exercise every never-executed path; run Stage 4 on the user's own device.
+
+### Changed
+- `LEARNINGS.md` gains the run and instrument learnings from two months of real runs, genericized: verification that passes what a human fails, the deploy-root leak, the version-control precondition, the synth-survey saturation, the WIP-cap-as-silencer failure, and the watchdog's rule-order bug.
+- `SKILL.md` Stage 1 expert panel falls back to running the panel inline when `sc:business-panel` is not installed (F12).
+- `FAMILY-RULES.md` F7 documents the WIP cap, the idle-clock rule, and the watchdog.
+- `forge_state.py`: the tracked-run scan is factored into `stalled_runs()` so the watchdog reuses the same walk; output is unchanged.
+
 ## [1.7.0] — 2026-09-11
 
 The predictions get graded. Reggie wrote one at every stage and every gate scored every artifact; nobody scored either, so the gates stayed where they were first set.

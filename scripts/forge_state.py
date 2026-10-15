@@ -3,7 +3,7 @@
 
 THE PROBLEM THIS FIXES
 ----------------------
-Adam, 2026-09-10: "Forge isn't supposed to stop. Why did it stop!"
+A founder, on a real run: "Forge isn't supposed to stop. Why did it stop!"
 
 Because nothing could advance it. GSD keeps its machine state in the YAML
 frontmatter of `.planning/STATE.md` (`stopped_at`, `status`, progress) and its
@@ -17,8 +17,23 @@ This does the same thing GSD does, for every Forge family:
     forge-state gate     records a transition (and refuses out-of-order passes)
     forge-state human    records the named real-human touchpoint (F5); status flags a run with none
     forge-state outcome  grades a prediction against its actual (F15); status flags a closing run with none
-    forge-state scan     every run that has gone idle with a gate owed (session-start hook);
+    forge-state scan     every run that has gone idle with a gate owed (session-start hook),
+                         capped at WIP_CAP lines plus a one-line count of the rest;
                          --calibration tallies every graded prediction across every run
+    forge-state park     stop a run nagging: PARKED runs never print in scan (mirrors the
+                         backlog: no due date, not deleted). `unpark` brings it back; recording a gate
+                         unparks it automatically, because work happened.
+    forge-state focus    pin a run to the top of the capped scan list: this is one of the 3
+                         things actually in flight.
+
+THE WIP CAP (2026-09-13)
+------------------------
+16 stalled runs printed at every session start. Nobody can act on 16, so the list
+trained everyone to scroll past it — the same failure the scan line was built to fix.
+So scan now prints at most 3 (focused first, then FAILED, then most idle) and one line
+counting the rest. The other 13 are not lost; they are `--all` away, and the honest move
+is to `park` them. A run you have not touched in a week is not a queue item, it is a
+decision you have not made.
 
 The manifest is whatever the family already calls its resume-cold document:
 FORGE-STATE.md (software, games), LAUNCH-STATE.md (gtm, either lens),
@@ -46,6 +61,10 @@ import sys
 
 VERSION = 2
 LEGACY_JSON = "FORGE-STATE.json"
+
+# How many stalled runs `scan` is allowed to print. Everything past it becomes one
+# counted line. Raise it and you are back to a list nobody reads.
+WIP_CAP = 3
 
 # Every Forge family: slash command, manifest filename, pipeline in order.
 # `blocking` = the run may not be called done while this stage is unresolved,
@@ -83,7 +102,7 @@ FAMILIES = {
         ("1", "Category entry points and ICPs",     True),
         ("2", "Strategy fan-out",                   True),
         ("3", "Copy fan-out (after Gate 2)",        True),
-        ("4", "Assembly + adam-voice pass",         True),
+        ("4", "Assembly + voice pass",         True),
         ("5", "Review and ship",                    False),
     ]),
     "research": ("/forge-research", "RESEARCH-STATE.md", [
@@ -128,11 +147,19 @@ FAMILIES = {
         ("4", "7-day read: kill or scale by the rules",  True),
         ("5", "28-day read and write-back",              True),
     ]),
+    "cfo": ("/forge-cfo", "CFO-STATE.md", [
+        ("0", "Intake: client, lanes, period",            True),
+        ("1", "Tax lane (cpa agent, cited memo)",         True),
+        ("2", "Close lane (weekly / monthly)",            True),
+        ("3", "CFO lane (forecast, margin, decisions)",   True),
+        ("4", "Year-end / preparer pack",                 True),
+        ("5", "Ship and write-back",                      False),
+    ]),
     "job": ("/job-apply", "JOB-STATE.md", [
         ("1",  "Source the jobs",                        True),
         ("1A", "Read the form first (Check 7)",          True),
         ("2",  "Research (/job-cep)",                    True),
-        ("3",  "Tailor in Adam's voice",                 True),
+        ("3",  "Tailor in the applicant's voice",                 True),
         ("4",  "Synth gate, both documents, 9/10",       True),
         ("5",  "Assemble the packet",                    True),
         ("6",  "Submit on explicit go, log outcome",     True),
@@ -154,6 +181,22 @@ def family(st):
     }
 
 
+def is_parked(st):
+    return bool((st or {}).get("parked"))
+
+
+def is_focus(st):
+    return bool((st or {}).get("focus"))
+
+
+def park_text(st):
+    p = (st or {}).get("parked") or {}
+    if not p:
+        return ""
+    since, why = p.get("since", "?"), p.get("reason", "")
+    return "parked %s%s" % (since, " — " + why if why else "")
+
+
 def today():
     return dt.date.today().isoformat()
 
@@ -171,7 +214,7 @@ def age_days(since):
 # --------------------------------------------------------------------------
 FM_RE = re.compile(r"\A---\n(.*?)\n---\n?", re.S)
 TOP_KEYS = ("forge_state_version", "project", "family", "command", "mode",
-            "verdict", "stage", "next_action", "updated")
+            "verdict", "stage", "next_action", "updated", "parked", "focus")
 
 
 def parse_frontmatter(text):
@@ -268,11 +311,12 @@ def derive_stage(st):
     return "DONE"
 
 
-def save(root, st, body, path):
+def save(root, st, body, path, touch=True):
     st["forge_state_version"] = VERSION
     st["command"] = family(st)["cmd"]
     st["stage"] = derive_stage(st)
-    st["updated"] = today()
+    if touch:                       # park / unpark / focus are bookkeeping, not work:
+        st["updated"] = today()     # they must not launder an idle clock back to zero
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(render_frontmatter(st))
         fh.write(body)
@@ -522,6 +566,11 @@ def cmd_human(root, st, body, path, args):
 def cmd_status(root, st, body, path, args):
     f = family(st)
     print("%s  [%s · %s mode]" % (st["project"], f["cmd"], st.get("mode", "?")))
+    if is_parked(st):
+        print("PARKED   %s  (scan will not print it; forge-state unpark to bring it back)"
+              % park_text(st))
+    if is_focus(st) and not is_parked(st):
+        print("FOCUS    pinned to the WIP %d — scan prints this one first" % WIP_CAP)
     if st.get("verdict"):
         print("verdict: %s" % st["verdict"])
     stage = derive_stage(st)
@@ -582,7 +631,7 @@ def cmd_next(root, st, body, path, args):
         print(paste_block(root, st, k))
         return 2 if owed(st) else 0
     print("RUN COMPLETE — every stage resolved. Verdict: %s" % (st.get("verdict") or "(none recorded)"))
-    print("Write the learnings back (skill LEARNINGS.md + ~/maax/context/learnings.md) if not done.")
+    print("Write the learnings back (the skill's LEARNINGS.md) if not done.")
     if not outcomes(st):
         print("No prediction graded (F15): forge-state outcome score|ship|field|reggie "
               "--predicted \"…\" --actual \"…\" --grade hit|partial|miss")
@@ -613,13 +662,53 @@ def cmd_gate(root, st, body, path, args):
     st["gates"][k] = {"state": args.state, "since": today(), "note": note}
     if args.next:
         st["next_action"] = args.next
+    unparked = is_parked(st)
+    if unparked:
+        st["parked"] = None
     save(root, st, body, path)
     print("Stage %s: %s -> %s" % (k, prev, args.state))
+    if unparked:
+        print("(unparked: a gate moved, so this run is live again and scan can print it)")
     if args.state == "fail":
         print("A failed gate is a STOP. `forge-state next` now exits 3 until it is decided.")
         return 0
     print()
     cmd_next(root, st, body, path, args)   # show what is next; the write itself succeeded
+    return 0
+
+
+def cmd_park(root, st, body, path, args):
+    st["parked"] = {"since": today(), "reason": args.reason or ""}
+    st["focus"] = None
+    save(root, st, body, path, touch=False)
+    print("PARKED %s: %s" % (st["project"], args.reason or "no reason given"))
+    print("It will not print in scan. forge-state unpark brings it back; so does recording a gate.")
+    return 0
+
+
+def cmd_unpark(root, st, body, path, args):
+    if not is_parked(st):
+        print("%s is not parked." % st["project"])
+        return 0
+    was = park_text(st)
+    st["parked"] = None
+    save(root, st, body, path, touch=False)
+    print("unparked %s (was %s)" % (st["project"], was))
+    print("next action: %s" % st.get("next_action", "—"))
+    return 0
+
+
+def cmd_focus(root, st, body, path, args):
+    if args.off:
+        st["focus"] = None
+        save(root, st, body, path, touch=False)
+        print("%s is no longer pinned." % st["project"])
+        return 0
+    st["focus"] = today()
+    st["parked"] = None
+    save(root, st, body, path, touch=False)
+    print("FOCUS %s — pinned to the WIP %d; scan prints it first." % (st["project"], WIP_CAP))
+    print("Keep the count at %d. `forge-state scan --all` shows who else claims a slot." % WIP_CAP)
     return 0
 
 
@@ -709,9 +798,13 @@ def find_manifests(home, maxdepth=5):
     return sorted(hits)
 
 
-def cmd_scan(root, st, body, path, args):
-    home = os.path.expanduser("~")
-    stalled, active, legacy, synthetic, ungraded, graded = [], [], [], [], [], []
+def stalled_runs(home, days):
+    """Factored out of cmd_scan so the watchdog (forge_watchdog.py) can reuse the
+    exact same walk instead of re-deriving stalled/failed/idle logic a second way.
+    Returns (stalled, active, legacy, synthetic, ungraded, graded, parked) — the
+    same seven lists cmd_scan built inline before this refactor. This is a pure
+    extraction: scan's printed output must be byte-identical before and after."""
+    stalled, active, legacy, synthetic, ungraded, graded, parked = [], [], [], [], [], [], []
     for mp in find_manifests(home):
         d = os.path.dirname(mp)
         s, _, _ = load(d)
@@ -728,29 +821,86 @@ def cmd_scan(root, st, body, path, args):
             ungraded.append(rel)
         for oc in outcomes(s):
             graded.append((f["name"], s.get("project", os.path.basename(d)), oc))
+        if is_parked(s):
+            parked.append("%s (%s)" % (rel, park_text(s)))
+            continue                       # a parked run never nags; that is the whole point
         if fl:
             k = fl[0][0]
-            stalled.append("FORGE: %s — Stage %s (%s) FAILED, decision owed → cd %s && forge-state next"
-                           % (os.path.basename(d), k, f["names"][k], rel))
-        elif o and idle >= args.days:
-            k = fl[0][0] if fl else o[0][0]
-            stalled.append("FORGE: %s — Stage %s (%s) owed, idle %d day%s → cd %s && forge-state next"
-                           % (os.path.basename(d), k, f["names"][k], idle, "" if idle == 1 else "s", rel))
+            line = ("FORGE: %s — Stage %s (%s) FAILED, decision owed → cd %s && forge-state next"
+                    % (os.path.basename(d), k, f["names"][k], rel))
+            stalled.append({"dir": d, "rel": rel, "line": line, "idle": idle,
+                            "failed": True, "focus": is_focus(s)})
+        elif o and idle >= days:
+            k = o[0][0]
+            line = ("FORGE: %s — Stage %s (%s) owed, idle %d day%s → cd %s && forge-state next"
+                    % (os.path.basename(d), k, f["names"][k], idle, "" if idle == 1 else "s", rel))
+            stalled.append({"dir": d, "rel": rel, "line": line, "idle": idle,
+                            "failed": False, "focus": is_focus(s)})
         elif o:
             active.append("%s: Stage %s owed, touched today" % (rel, o[0][0]))
         else:
             active.append("%s: nothing blocking (stage %s)" % (rel, derive_stage(s)))
+    return stalled, active, legacy, synthetic, ungraded, graded, parked
+
+
+def cmd_scan(root, st, body, path, args):
+    """The session-start line. Quiet unless something has actually stalled, and never
+    more than `--cap` lines of it — see THE WIP CAP in the module docstring."""
+    home = os.path.expanduser("~")
+    stalled, active, legacy, synthetic, ungraded, graded, parked = stalled_runs(home, args.days)
     if args.calibration:
         return print_calibration(graded)
-    for line in stalled:
-        print(line)
+
+    # focused first, then a FAILED gate (it is a decision, not a chore), then the stalest.
+    stalled.sort(key=lambda e: (not e["focus"], not e["failed"], -e["idle"], e["rel"]))
+    cap = len(stalled) if (args.all or args.cap <= 0) else args.cap
+    shown, hidden = stalled[:cap], stalled[cap:]
+
+    if args.park_overflow:
+        if not hidden:
+            print("FORGE: nothing past the WIP cap of %d — nothing to park." % args.cap)
+            return 0
+        for e in hidden:
+            s2, b2, p2 = load(e["dir"])
+            s2["parked"] = {"since": today(),
+                            "reason": "over the WIP cap of %d on %s" % (args.cap, today())}
+            s2["focus"] = None
+            save(e["dir"], s2, b2, p2, touch=False)
+            print("PARKED %s" % e["rel"])
+        print("FORGE: %d run%s parked, %d still in flight. "
+              "`forge-state -C <dir> unpark` brings one back."
+              % (len(hidden), "" if len(hidden) == 1 else "s", len(shown)))
+        return 0
+
+    for e in shown:
+        print(e["line"] + ("   [FOCUS]" if e["focus"] else ""))
+
+    bits = []
+    if hidden:
+        bits.append("%d more run%s owed a gate, not shown (WIP cap %d)"
+                    % (len(hidden), "" if len(hidden) == 1 else "s", args.cap))
+    if parked and (shown or hidden or args.verbose):
+        bits.append("%d parked" % len(parked))
+    if bits:
+        how = ("`forge-state scan --park-overflow` parks every one of them"
+               if hidden else "`forge-state -C <dir> unpark` brings one back")
+        print("FORGE: %s — `forge-state scan --all` lists them; %s."
+              % ("; ".join(bits), how))
+    n_focus = sum(1 for e in stalled if e["focus"])
+    if n_focus > args.cap:
+        print("FORGE: %d runs are pinned FOCUS but the cap is %d. Pick. "
+              "`forge-state -C <dir> focus --off`" % (n_focus, args.cap))
+
     if args.all:
         for a in active:
             print("ok     %s" % a)
+        for p in parked:
+            print("parked %s" % p)
         for l in legacy:
             print("legacy %s (prose only; track it: cd %s && forge-state init --family …)" % (l, l))
     elif not stalled and args.verbose:
-        print("FORGE: nothing stalled (%d tracked, %d legacy)" % (len(active) + len(stalled), len(legacy)))
+        print("FORGE: nothing stalled (%d tracked, %d parked, %d legacy)"
+              % (len(active) + len(stalled), len(parked), len(legacy)))
     if args.verbose and synthetic:
         print("FORGE: %d run%s past Stage 1 with no human touchpoint (F5, all-synthetic): %s"
               % (len(synthetic), "" if len(synthetic) == 1 else "s", ", ".join(synthetic)))
@@ -799,7 +949,7 @@ def main():
     g.add_argument("--next", default="", help="set the project's next action in the same write")
     g.add_argument("--force", action="store_true", help="allow an out-of-order pass (recorded as such)")
     h = sub.add_parser("human", help="record the named real-human touchpoint (F5); a run can have several")
-    h.add_argument("who", help="the person, by name or role (the client, Brooke, a viewer)")
+    h.add_argument("who", help="the person, by name or role (the client, a viewer)")
     h.add_argument("--when", default="", help="YYYY-MM-DD (default: today)")
     h.add_argument("--how", required=True, help="the channel: in person, phone, text, email, recording")
     h.add_argument("--said", required=True, help="the verbatim, or the path to it")
@@ -814,6 +964,11 @@ def main():
     oc.add_argument("--note", default="", help="one line: why it missed, or what it teaches the gate")
     oc.add_argument("--append", default="", help="also append one line to this file "
                     "(a panel's learnings file; `reggie` defaults to .reggie/predictions.md)")
+    pk = sub.add_parser("park", help="stop this run nagging: scan will not print it")
+    pk.add_argument("reason", nargs="?", default="", help="one line: why it is parked, not dead")
+    sub.add_parser("unpark", help="bring a parked run back into scan")
+    fo = sub.add_parser("focus", help="pin this run to the top of the capped scan list")
+    fo.add_argument("--off", action="store_true", help="unpin it")
     n = sub.add_parser("set-next", help="set the single next action")
     n.add_argument("text")
     v = sub.add_parser("verdict", help="record the verdict")
@@ -828,14 +983,22 @@ def main():
     sc.add_argument("--verbose", action="store_true", help="print a line even when nothing stalled")
     sc.add_argument("--calibration", action="store_true",
                     help="tally every graded prediction across every run, by family and kind")
+    sc.add_argument("--cap", type=int, default=WIP_CAP,
+                    help="most stalled runs to print; the rest become one counted line (0 = no cap)")
+    sc.add_argument("--park-overflow", dest="park_overflow", action="store_true",
+                    help="park every stalled run past the cap, in one move")
+    import forge_watchdog
+    forge_watchdog.add_subparser(sub)
     args = ap.parse_args()
 
     root = os.path.abspath(args.root)
     cmd = args.cmd or "status"
-    st, body, path = (None, "", None) if cmd == "scan" else load(root)
+    st, body, path = (None, "", None) if cmd in ("scan", "watchdog") else load(root)
 
     if cmd == "scan":
         return cmd_scan(root, None, None, None, args)
+    if cmd == "watchdog":
+        return forge_watchdog.cmd_watchdog(args)
     if cmd == "init":
         if args.family == "yt":
             sys.exit("yt was folded into gtm on 2026-09-10: use --family gtm and set "
@@ -847,8 +1010,9 @@ def main():
                  % (root, " (prose-only %s found)" % os.path.basename(path) if path else "",
                     "|".join(sorted(FAMILIES))))
     return {"status": cmd_status, "next": cmd_next, "gate": cmd_gate, "human": cmd_human,
-            "outcome": cmd_outcome, "set-next": cmd_set_next,
-            "verdict": cmd_verdict}[cmd](root, st, body, path, args)
+            "outcome": cmd_outcome, "set-next": cmd_set_next, "verdict": cmd_verdict,
+            "park": cmd_park, "unpark": cmd_unpark,
+            "focus": cmd_focus}[cmd](root, st, body, path, args)
 
 
 if __name__ == "__main__":
