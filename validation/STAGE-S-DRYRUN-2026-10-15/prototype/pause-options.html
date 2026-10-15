@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pause coffee subscription: options (THROWAWAY)</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f6f1e7; color: #222; }
+  .banner { background: #c0392b; color: #fff; text-align: center; font-size: 28px; font-weight: 800; padding: 18px; letter-spacing: 1px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 24px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+  .tabs button { flex: 1; padding: 12px; font-size: 16px; border: 2px solid #222; background: #fff; cursor: pointer; }
+  .tabs button.on { background: #222; color: #fff; }
+  .panel { display: none; background: #fff; border: 2px solid #222; padding: 24px; }
+  .panel.on { display: block; }
+  .opt-name { font-weight: 700; margin-bottom: 16px; }
+  .big { display: flex; gap: 12px; }
+  .big button { flex: 1; padding: 28px 8px; font-size: 20px; font-weight: 700; background: #e8d9b8; border: 2px solid #222; cursor: pointer; }
+  .big button.sel { background: #222; color: #fff; }
+  .confirm { margin-top: 20px; font-size: 20px; }
+  .muted { color: #666; font-size: 14px; margin-top: 8px; }
+  input[type=date] { font-size: 20px; padding: 8px; }
+  .skip { font-size: 22px; padding: 22px 28px; background: #e8d9b8; border: 2px solid #222; cursor: pointer; }
+  .skip:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="banner">THROWAWAY PROTOTYPE, not the product</div>
+<div class="wrap">
+  <div class="tabs">
+    <button class="on" data-tab="a">A: Pause buttons</button>
+    <button data-tab="b">B: Resume date</button>
+    <button data-tab="c">C: Skip box</button>
+  </div>
+
+  <!-- A -->
+  <div class="panel on" id="a">
+    <div class="opt-name">Pause my coffee subscription</div>
+    <div class="big">
+      <button data-m="1">Pause 1 month</button>
+      <button data-m="2">Pause 2 months</button>
+      <button data-m="3">Pause 3 months</button>
+    </div>
+    <div class="confirm" id="a-out">Pick a pause length.</div>
+  </div>
+
+  <!-- B -->
+  <div class="panel" id="b">
+    <div class="opt-name">Pause my coffee subscription</div>
+    <label>Resume on... <input type="date" id="b-date"></label>
+    <div class="confirm" id="b-out"></div>
+    <div class="muted">Pick a date up to 3 months out.</div>
+  </div>
+
+  <!-- C -->
+  <div class="panel" id="c">
+    <div class="opt-name">Skip my next box</div>
+    <button class="skip" id="c-btn">Skip next box</button>
+    <div class="confirm" id="c-out"></div>
+    <div class="muted" id="c-count"></div>
+  </div>
+</div>
+
+<script>
+  const TODAY = new Date(2026, 9, 15);      // 2026-10-15
+  const NEXT_SHIP = new Date(2026, 9, 29);  // 2026-10-29
+  const CYCLE = 28;
+
+  function fmt(d) {
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+  }
+  function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+  function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); }
+
+  // Tabs
+  document.querySelectorAll('.tabs button').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('on'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+      btn.classList.add('on');
+      document.getElementById(btn.dataset.tab).classList.add('on');
+    };
+  });
+
+  // A: pause N months shifts next ship by N months
+  document.querySelectorAll('#a .big button').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#a .big button').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      const m = Number(btn.dataset.m);
+      const next = addMonths(NEXT_SHIP, m);
+      document.getElementById('a-out').textContent = `Your next box ships on ${fmt(next)}.`;
+    };
+  });
+
+  // B: resume date becomes next ship date, limited to today..today+3 months
+  const bDate = document.getElementById('b-date');
+  bDate.min = fmt(TODAY);
+  bDate.max = fmt(addMonths(TODAY, 3));
+  bDate.value = fmt(addMonths(TODAY, 1));
+  function renderB() {
+    if (!bDate.value) { document.getElementById('b-out').textContent = 'Pick a resume date.'; return; }
+    const [y, m, d] = bDate.value.split('-').map(Number);
+    const next = new Date(y, m - 1, d);
+    document.getElementById('b-out').textContent = `Your next box ships on ${fmt(next)}.`;
+  }
+  bDate.onchange = renderB;
+  renderB();
+
+  // C: each skip pushes next ship by 28 days, max 3 skips
+  let skips = 0;
+  const cBtn = document.getElementById('c-btn');
+  function renderC() {
+    const next = addDays(NEXT_SHIP, skips * CYCLE);
+    document.getElementById('c-out').textContent = `Your next box ships on ${fmt(next)}.`;
+    document.getElementById('c-count').textContent = `Skips used: ${skips} of 3. Each skip moves the box 28 days.`;
+    cBtn.disabled = skips >= 3;
+  }
+  cBtn.onclick = () => { if (skips < 3) { skips++; renderC(); } };
+  renderC();
+</script>
+</body>
+</html>

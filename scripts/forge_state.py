@@ -14,7 +14,9 @@ This does the same thing GSD does, for every Forge family:
 
     <manifest>.md        one file per run: YAML frontmatter (machine) + prose (human)
     forge-state next     the single next action; exit code says whether a gate blocks
-    forge-state gate     records a transition (and refuses out-of-order passes)
+    forge-state gate     records a transition (and refuses out-of-order passes; Stage S is
+                         checked against SPEC.md / GLOSSARY.md / SPEC-REVIEW.md on disk)
+    forge-state migrate --spec   opt a run begun before Stage S into it
     forge-state human    records the named real-human touchpoint (F5); status flags a run with none
     forge-state outcome  grades a prediction against its actual (F15); status flags a closing run with none
     forge-state scan     every run that has gone idle with a gate owed (session-start hook),
@@ -78,6 +80,7 @@ FAMILIES = {
         ("0",  "Capture + kill criteria",      True),
         ("0A", "Intended-use intake",          True),
         ("1",  "Validate (three verdicts)",    True),
+        ("S",  "Spec: grill, glossary, review", True),
         ("2",  "Build (GSD is the engine)",    True),
         ("2B", "Brand system",                 False),
         ("3",  "Synth usability to the gate",  True),
@@ -91,6 +94,7 @@ FAMILIES = {
         ("1",  "Validate",                          True),
         ("T",  "TOOLCHAIN GATE",                    True),
         ("P",  "PROTOTYPE, find the fun",           True),
+        ("S",  "SPEC the slice (light)",            True),
         ("V",  "VERTICAL SLICE (the Cerny gate)",   True),
         ("2",  "BUILD (GSD, gated behind V)",       True),
         ("3'", "PLAYTEST, real humans",             True),
@@ -165,6 +169,7 @@ FAMILIES = {
         ("6",  "Submit on explicit go, log outcome",     True),
     ]),
 }
+SPEC_FAMILIES = ("software", "games")       # families with Stage S (SPEC), checked by forge_spec.py
 MANIFESTS = sorted({v[1] for v in FAMILIES.values()})
 RESOLVED = ("pass", "waived", "n/a")          # counts as done
 STATES = ("pass", "fail", "pending", "waived", "n/a")
@@ -173,6 +178,10 @@ STATES = ("pass", "fail", "pending", "waived", "n/a")
 def family(st):
     fam = (st or {}).get("family", "software")
     cmd, manifest, stages = FAMILIES.get(fam, FAMILIES["software"])
+    if fam in SPEC_FAMILIES and (st or {}).get("gates") and "S" not in st["gates"]:
+        # Stage S (2026-10-15) is new: a run that began before it stays as it was
+        # until it opts in with `forge-state migrate --spec`.
+        stages = [x for x in stages if x[0] != "S"]
     return {
         "name": fam, "cmd": cmd, "manifest": manifest,
         "order": [s[0] for s in stages],
@@ -627,6 +636,9 @@ def cmd_next(root, st, body, path, args):
                   % json.dumps(k))
         if g.get("note"):
             print("Note: %s" % g["note"])
+        if k == "S" and f["name"] in SPEC_FAMILIES:
+            print("Needs: SPEC.md + GLOSSARY.md + SPEC-REVIEW.md at the run root (grill the frontier, spec, "
+                  "2-3 fresh reviewers, every finding ruled). Pass is checked: forge-state gate S pass")
         print("Project next action: %s" % st.get("next_action", "—"))
         print(paste_block(root, st, k))
         return 2 if owed(st) else 0
@@ -655,6 +667,8 @@ def cmd_gate(root, st, body, path, args):
                      "to record an out-of-order pass."
                      % (k, "" if len(earlier) == 1 else "s", ", ".join(earlier),
                         "is" if len(earlier) == 1 else "are", "it" if len(earlier) == 1 else "them"))
+    if f["name"] in SPEC_FAMILIES and k == "S":
+        spec_gate(root, st, f, args)
     prev = st["gates"][k].get("state")
     note = args.note or ""
     if args.force and args.state in RESOLVED:
@@ -674,6 +688,47 @@ def cmd_gate(root, st, body, path, args):
         return 0
     print()
     cmd_next(root, st, body, path, args)   # show what is next; the write itself succeeded
+    return 0
+
+
+def spec_gate(root, st, f, args):
+    """Stage S is checked against SPEC.md, GLOSSARY.md and SPEC-REVIEW.md on disk; a thin one is refused."""
+    if args.state == "n/a":
+        sys.exit("refused: Stage S applies to every %s build, so it cannot be n/a. Write the spec, or the "
+                 "founder skips it: forge-state gate S waived --note \"<their words>\"" % f["name"])
+    if args.state != "pass":
+        return
+    import forge_spec
+    errs = forge_spec.spec_check(root, st.get("mode", "full"), f["name"])
+    if errs:
+        sys.exit("refused: Stage S needs a complete spec and a ruled review (SKILL.md, Stage S):\n  - "
+                 + "\n  - ".join(errs)
+                 + "\n(check by hand: python3 forge_spec.py %s --mode %s; or, if the founder skips it: "
+                   "forge-state gate S waived --note \"<their words>\")" % (root, st.get("mode", "full")))
+
+
+def cmd_migrate(root, st, body, path, args):
+    """Opt a run begun before Stage S into it (S added as pending, in table order). Never touches other gates."""
+    fam = st.get("family", "software")
+    if not getattr(args, "spec", False):
+        sys.exit("migrate what? --spec adds Stage S (SPEC) to a software or games run begun before it existed")
+    if fam not in SPEC_FAMILIES:
+        sys.exit("Stage S belongs to the %s families; this run is %s" % (" and ".join(SPEC_FAMILIES), fam))
+    if "S" in st["gates"]:
+        print("nothing to migrate: this run already has Stage S")
+        return 0
+    order = [x[0] for x in FAMILIES[fam][2]]
+    gates = {}
+    for k in order:
+        if k == "S":
+            gates[k] = {"state": "pending", "since": today(), "note": "opted in by forge-state migrate --spec"}
+        elif k in st["gates"]:
+            gates[k] = st["gates"][k]
+    for k, g in st["gates"].items():             # keys the family no longer lists stay where they were
+        gates.setdefault(k, g)
+    st["gates"] = gates
+    save(root, st, body, path)
+    print("migrated: added Stage S as pending (spec + spec review, before the build)")
     return 0
 
 
@@ -974,6 +1029,9 @@ def main():
     v = sub.add_parser("verdict", help="record the verdict")
     v.add_argument("text")
     v.add_argument("--close", action="store_true", help="the verdict ends the run: mark remaining stages n/a")
+    mg = sub.add_parser("migrate", help="opt a run begun before a newer stage into it; never touches existing gates")
+    mg.add_argument("--spec", action="store_true",
+                    help="software or games runs begun before Stage S: add S as pending")
     i = sub.add_parser("init", help="track this run (new manifest, or frontmatter onto an existing one)")
     i.add_argument("--family", default="software", choices=sorted(FAMILIES) + ["yt"])
     i.add_argument("--mode", default="full", help="full | speed-run | autonomous")
@@ -1011,7 +1069,7 @@ def main():
                     "|".join(sorted(FAMILIES))))
     return {"status": cmd_status, "next": cmd_next, "gate": cmd_gate, "human": cmd_human,
             "outcome": cmd_outcome, "set-next": cmd_set_next, "verdict": cmd_verdict,
-            "park": cmd_park, "unpark": cmd_unpark,
+            "park": cmd_park, "unpark": cmd_unpark, "migrate": cmd_migrate,
             "focus": cmd_focus}[cmd](root, st, body, path, args)
 
 

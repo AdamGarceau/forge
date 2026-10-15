@@ -1,0 +1,48 @@
+# Stage S gate proof, 2026-10-15 11:51
+
+== 1. gate S on a deliberately THIN copy (thin/: one-line problem, no decisions table, no seams, a 400K slice, author reviewing itself, zero findings). Expect REFUSED
+$ forge-state -C thin gate S pass
+refused: Stage S needs a complete spec and a ruled review (SKILL.md, Stage S):
+  - ## Problem is missing or under 10 words: say whose pain, in their words
+  - `Grill rounds:` is missing: the number of frontier rounds asked (1 or more)
+  - `Open decisions:` is missing: it must read 0 (the frontier is empty)
+  - ## Decisions needs a table with columns: Decision | Answer | Decided by
+  - ## User stories has no story in the form "As a <who>, I ..."
+  - ## Seams lists none: name where the tests poke in (ideal is one per feature)
+  - ## Out of scope lists nothing: name at least one thing this build will NOT do
+  - ## Slices needs a table with columns: Slice | ... | Seam | Est. tokens | Blocked by
+  - GLOSSARY.md is missing: write the terms the grill settled (Term | Meaning | Avoid)
+  - ## Reviewers lists 1, this run needs 3 fresh-context reviewers
+  - ## Reviewers: 'A' is the spec's author (main-session-forge-stage-spec). The author never reviews its own spec
+  - ## Findings is empty. A review that finds nothing is suspect: re-run it harsher, or a different model, and record what it found
+(check by hand: python3 forge_spec.py /Users/garceau/forge/validation/STAGE-S-DRYRUN-2026-10-15/thin --mode full; or, if the founder skips it: forge-state gate S waived --note "<their words>")
+exit=1
+
+== 2. Stage 2 cannot pass while S is open (thin/)
+$ forge-state -C thin gate 2 pass
+refused: Stage 2 cannot pass while earlier blocking stage S is unresolved. Resolve it first (pass / waived --note / n/a), or --force to record an out-of-order pass.
+exit=1
+
+== 3. checker on the reviewed spec (this folder), product copy then live copy
+$ python3 forge_spec.py . --mode full
+STAGE S: READY
+exit=0
+STAGE S: READY
+exit=0
+
+== 4. gate S on the reviewed spec. Expect PASS (recorded at 11:51)
+$ forge-state gate S pass --note "3 grill rounds, 19 decisions, 10 stories, 3 slices; 26 findings ruled (24 fixed, 2 dismissed)"
+Stage S: pending -> pass
+
+NEXT OWED: Stage 2 — Build (GSD is the engine)
+exit=0
+
+$ forge-state status (excerpt)
+stage:   2 — Build (GSD is the engine)
+        toy dry run: Stage 0 not exercised (Stage S proof only)
+        toy dry run: Stage 0A not exercised (Stage S proof only)
+  ✅  1   Validate (three verdicts)            pass    
+        toy dry run: Stage 1 not exercised (Stage S proof only)
+  ✅  S   Spec: grill, glossary, review        pass    
+        3 grill rounds, 19 decisions, 10 stories, 3 slices; 26 findings ruled (24 fixed, 2 dismissed)
+  ⬜  2   Build (GSD is the engine)            pending   ← BLOCKING

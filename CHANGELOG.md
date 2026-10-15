@@ -2,6 +2,22 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.10.0] — 2026-10-15
+
+Stage S: Forge writes a spec before it builds, and fresh reviewers attack the spec before any code. Until now Reggie reviewed the idea (Stage 1) and the plan-checker reviewed the GSD plan (Stage 2), but nothing reviewed what was about to be built.
+
+Credit: the mechanics are adapted from Matt Pocock's skills (github.com/mattpocock/skills, v1.3, MIT): `grilling` (the decision-tree frontier, a recommended answer per question, facts looked up rather than asked), `domain-modeling` and `wait-what` (the glossary and the plain re-pitch), `prototype` (throwaway options for questions talk cannot settle), `to-spec` and `to-tickets` (seams, vertical slices sized to one fresh session, blocked-by links), `tdd`, `code-review` (spec and standards as two separate fresh reviewers), `pr` (merge danger: one-way or two-way door, blast radius) and `retro` (suggest, the human picks; a mechanical mistake becomes a check). Adapted, not copied.
+
+### Added
+- **Stage S, SPEC (blocking, software family, between Stage 1 and Stage 2; runs in speed-run too, compressed).** Grill the decisions in batched frontier rounds with recommended answers (Company-Builder answers its own and logs them); facts come from a helper agent, never the founder; ungrillable look-and-feel questions go to a throwaway prototype. Writes `GLOSSARY.md` (term, meaning, words to avoid), `SPEC.md` (problem, decisions with who decided, user stories, seams, out of scope, vertical slices with token estimates and blocked-by links) and `SPEC-REVIEW.md` (2 reviewers in speed-run, 3 in full and Company-Builder: completeness, Reggie on scope, a non-coder founder reader; every finding fixed or dismissed with a reason).
+- **`scripts/forge_spec.py`**: the Stage S check. `forge-state gate S pass` refuses a thin spec: missing sections, an open frontier, a decision with no owner, no user story or seam, a slice over 150K tokens, a blocked-by loop or unknown slice, a word the glossary says to avoid, fewer reviewers than the mode needs, a reviewer who is the author, the same agent twice, zero findings, or a finding with no ruling or reason. `gate S n/a` is refused; skipping is a waiver with the founder's words.
+- **`forge-state migrate --spec`**: runs begun before Stage S are untouched until they opt in.
+- **Games family:** a light Stage S after Stage P (the prototype already proved the fun) and before the vertical slice; always 2 reviewers.
+- **Stage 2 builds from the spec:** slices become the roadmap phases, tests are written first at the agreed seams, one slice per fresh session, and after every execute two fresh reviewers (spec conformance quoting the user story; code standards and smells) whose reports stay separate. The author never reviews its own work.
+- **Merge danger line** on every PR, ship and deploy report: `Merge danger: one-way|two-way door, blast radius: <area>`.
+- **F17 Retro (FAMILY-RULES.md, every family):** at each stage close and before clearing a long session, the agent reads itself back and suggests changes; the founder picks; a mistake a machine can spot becomes a check, not a prose rule. Recorded in the existing `LEARNINGS.md`, not a new file.
+- **`validation/STAGE-S-DRYRUN-2026-10-15/`**: the proof run on Pocock's coffee-subscription "pause" toy: 3 grill rounds, a 3-option prototype, 3 fresh reviewers with 26 findings ruled, the gate passing on the reviewed spec and refusing a thin copy.
+
 ## [1.9.1] — 2026-09-30
 
 Fixes from the first real Retro-Audit run.

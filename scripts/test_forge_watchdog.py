@@ -84,7 +84,7 @@ class WatchdogFixtureTests(unittest.TestCase):
     def test_commits_since_updated_is_done_unrecorded(self):
         d = self._project("done-unrecorded-run")
         passed = {"state": "pass", "since": "2026-09-01", "note": ""}
-        gates = {k: passed for k in ("G", "H", "0", "0A", "1")}
+        gates = {k: passed for k in ("G", "H", "0", "0A", "1", "S")}
         gates["2"] = {"state": "pending", "since": "2026-09-01", "note": ""}
         write_manifest(d, gates, updated="2026-09-01")
         git_commit(d, "output.txt", "did the stage 2 work")
@@ -101,7 +101,7 @@ class WatchdogFixtureTests(unittest.TestCase):
         # Everything before it (including the non-blocking G/H/2B) must resolve first,
         # or derive_stage() will land on one of those instead of "4".
         passed = {"state": "pass", "since": "2026-09-01", "note": ""}
-        write_manifest(d, {k: passed for k in ("G", "H", "0", "0A", "1", "2", "2B", "3")},
+        write_manifest(d, {k: passed for k in ("G", "H", "0", "0A", "1", "S", "2", "2B", "3")},
                        updated="2026-09-01")
         st, _, _ = fs.load(d)
         ev = wd.gather_evidence(d, st)
@@ -112,7 +112,7 @@ class WatchdogFixtureTests(unittest.TestCase):
     def test_third_party_mention_is_blocked_external(self):
         d = self._project("external-run")
         passed = {"state": "pass", "since": "2026-09-01", "note": ""}
-        gates = {k: passed for k in ("G", "H", "0", "0A", "1")}
+        gates = {k: passed for k in ("G", "H", "0", "0A", "1", "S")}
         gates["2"] = {"state": "pending", "since": "2026-09-01",
                      "note": "waiting on the client to confirm the date"}
         write_manifest(d, gates, updated="2026-09-01")
@@ -124,7 +124,7 @@ class WatchdogFixtureTests(unittest.TestCase):
     def test_idle_with_no_movement_is_abandon(self):
         d = self._project("abandon-run")
         passed = {"state": "pass", "since": "2020-01-01", "note": ""}
-        gates = {k: passed for k in ("G", "H", "0", "0A", "1")}
+        gates = {k: passed for k in ("G", "H", "0", "0A", "1", "S")}
         gates["2"] = {"state": "pending", "since": "2020-01-01", "note": ""}
         write_manifest(d, gates, updated="2020-01-01")   # far enough in the past: idle >> 14 days
         st, _, _ = fs.load(d)
@@ -137,7 +137,7 @@ class WatchdogFixtureTests(unittest.TestCase):
     def test_quiet_and_recent_is_resumable(self):
         d = self._project("resumable-run")
         passed = {"state": "pass", "since": fs.today(), "note": ""}
-        gates = {k: passed for k in ("G", "H", "0", "0A", "1")}
+        gates = {k: passed for k in ("G", "H", "0", "0A", "1", "S")}
         gates["2"] = {"state": "pending", "since": fs.today(), "note": ""}
         write_manifest(d, gates, updated=fs.today(), next_action="run the build step")
         st, _, _ = fs.load(d)
@@ -266,7 +266,7 @@ class RealWorldReproTests(unittest.TestCase):
 
     def test_personal_site_repro_dead_token(self):
         d = self._project("personal-site")
-        gates = self._passed("G", "H", "0", "0A", "1", "2", "2B", "3")
+        gates = self._passed("G", "H", "0", "0A", "1", "S", "2", "2B", "3")
         gates["4"] = {"state": "pending", "since": "2026-09-20", "note": ""}
         write_manifest(
             d, gates, family="gtm",
@@ -322,7 +322,7 @@ class RealWorldReproTests(unittest.TestCase):
         """Point 2: with commits but no model available, DONE_UNRECORDED must fall
         back to RESUMABLE, never print DONE unconfirmed."""
         d = self._project("quiet-busy-repo")
-        gates = self._passed("G", "H", "0", "0A", "1")
+        gates = self._passed("G", "H", "0", "0A", "1", "S")
         gates["2"] = {"state": "pending", "since": "2026-09-01", "note": ""}
         write_manifest(d, gates, updated="2026-09-01")
         git_commit(d, "output.txt", "did the stage 2 work")

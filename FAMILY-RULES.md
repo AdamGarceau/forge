@@ -398,15 +398,41 @@ write the handoff into the manifest and clear. Long-horizon work goes to a
 subagent, never to a deeper main session. The orchestrating session is for the
 brief, the picks, the gate calls, and the final read; everything between is batch.
 
+## F17. Retro: the run reads itself back and suggests fixes
+
+Added 2026-10-15 (adapted from Matt Pocock's `retro` skill). F15 writes down what
+went wrong; F17 turns it into a better pipeline. **When:** at each stage close, and
+before clearing any long session (F16).
+
+1. **Read the session back.** The agent reads its own transcript (or the stage's
+   artifacts and commits) and lists what cost time: a wrong guess, a re-done step,
+   a question the founder had to ask twice, a check that let a bad artifact through, an
+   instruction that changed nothing.
+2. **Suggest, never apply.** Each item becomes a suggested change to the
+   environment: a skill instruction, a `forge-state` gate check, a test, a lint rule
+   or hook, a memory. List them worst first, one line each, with the file it would
+   touch. The founder picks (in Company-Builder mode the orchestrator picks and logs why).
+   Nothing is autopilot-applied: an agent fixing its own findings chases false
+   positives.
+3. **A mistake a machine can spot becomes a check, not a prose rule.** If the
+   mistake has a fixed shape (a missing section, a banned word, a wrong path, a
+   field left blank, a file in the wrong place), the fix is a check that fails
+   loudly: a gate check in `forge_state.py` / `forge_spec.py`, a
+   test, a hook. Prose is for judgment calls only. A check that exists but is not
+   wired in is itself a finding.
+4. **Same habit, not a new system.** The suggestions and the picks go in the
+   governing skill's `LEARNINGS.md` (F15) under a `Retro:` line for the stage, with
+   what was picked, what was built, and what was declined. No separate retro file.
+
 ## How a family file inherits
 
 The header, right under the claim (F0):
 
-> **Inherits `FAMILY-RULES.md`** (F0 to F16: the family table, compute, honest
+> **Inherits `FAMILY-RULES.md`** (F0 to F17: the family table, compute, honest
 > verdicts, first-party, the human touchpoint, gates and the manifest, the run
 > does not stop, the calibration kit, the copy gate, seam discipline, Reggie,
 > artifacts, confidentiality, numbers, Stage 5 write-back and the channel line,
-> session economics). This file carries only what differs for `<family>`.
+> session economics, the retro). This file carries only what differs for `<family>`.
 
 Then the family's own rules. A rule that restates an F-rule is a bug; a rule that
 tightens one names it ("F4, tightened: every claim carries a tier"). A family's

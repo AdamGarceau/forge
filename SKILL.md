@@ -20,9 +20,9 @@ description: >
 
 > **The claim:** One-shot software, even if you can't code. Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
 
-> **Version 1.9.1** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+> **Version 1.10.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
 
-> **Inherits `FAMILY-RULES.md`** (this directory; F0 to F16): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
+> **Inherits `FAMILY-RULES.md`** (this directory; F0 to F17): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
 
 The standing process for every new build. Born 2026-07-06 from three proven runs:
 
@@ -195,6 +195,8 @@ Then the **adversarial pass**. Meet **Reggie**: a separate agent (fresh context,
 - **BUILD FOR SELF** — the pain is the founder's and real, but external demand evidence is missing or only synthetic. This is a first-class outcome, not a consolation prize. → proceed in **speed-run mode**.
 - **BUILD FOR MARKET** — kill criteria's external-evidence bar met and the case survived refutation. → proceed in **full mode**.
 
+Either build verdict goes to **Stage S (the spec)** next, not straight to Stage 2.
+
 A MARKET verdict founded only on synthetic enthusiasm is forbidden — cap it at BUILD FOR SELF and say why.
 
 **Then the GAP MAP — mandatory sixth artifact, written for EVERY verdict.** Validation is not just a yes/no on the idea as pitched; every run must also extract the OPPORTUNITY from the research already paid for. The question is where the founder can be the big fish. From the Stage 1 data (no new research), write `06-gap-map.md`:
@@ -202,6 +204,127 @@ A MARKET verdict founded only on synthetic enthusiasm is forbidden — cap it at
 - **Incumbent big-fish map:** who owns each segment today, and what each is STRUCTURALLY locked out of (brand, audience, business model — not just "hasn't done it yet").
 - **Two win paths, scored:** (a) better PRODUCT for the underserved segment; (b) higher-volume / better-aimed CONTENT in the niche (the niche-bend: same topic, bent to the audience the incumbents can't serve). Say which wins and why.
 - **Re-aimed idea:** if the verdict wasn't BUILD FOR MARKET, name the adjacent aim that WOULD clear the kill criteria — or say plainly none exists in this market. A DON'T BUILD or BUILD FOR SELF with a hot gap map is a successful run, not a failed one.
+
+## Stage S: SPEC (grill, glossary, spec, spec review). BLOCKING, software family
+
+Added in 1.10.0, from the maintainer's ask: "build a spec when you start a forge and then reviewers should review the spec." Before this, Reggie reviewed the IDEA (Stage 1) and the plan-checker reviewed the GSD PLAN (Stage 2), but nothing reviewed what we were about to build. The mechanics are adapted from Matt Pocock's skills (github.com/mattpocock/skills, MIT: `grilling`, `domain-modeling`, `wait-what`, `prototype`, `to-spec`, `to-tickets`, `code-review`, `retro`).
+
+**Where it sits:** after the Stage 1 verdict (BUILD FOR SELF or BUILD FOR MARKET) and before Stage 2. A DON'T BUILD never reaches it. It runs in every mode; speed-run compresses it (fewer rounds, 2 reviewers), it does not skip it. The games family runs a light version after Stage P, before the vertical slice.
+
+**What it produces, at the project root:** `GLOSSARY.md`, `SPEC.md`, `SPEC-REVIEW.md`. `forge-state gate S pass` reads all three on disk and refuses a thin set (`scripts/forge_spec.py`; run it by hand first: `python3 scripts/forge_spec.py . --mode <mode>`).
+
+### S1. Grill (decisions from the founder, facts from the code)
+
+1. **Map the decision tree.** From `00-idea.md`, the Stage 1 artifacts and (if it exists) the codebase, list every decision the build needs. Each decision hangs off the decisions it depends on ("how long can a pause last" hangs off "can people pause at all").
+2. **Facts are never asked.** Anything the code, docs, data or Stage 1 research can answer goes to a helper agent (a cheaper model), not to the founder. "What does billing do today" is a fact. "Should a pause shift the billing date" is a decision.
+3. **Ask the whole frontier in ONE numbered round.** The frontier is every open decision whose parent decisions are settled. Each question carries Forge's recommended answer, worded so "yes" accepts it:
+
+   ```
+   Q1. Longest pause? Recommend: 3 months. (yes = 3 months)
+   Q2. Does the billing date move with the pause? Recommend: yes, it shifts by the pause length.
+   Q3. ...
+   ```
+
+   The founder replies in one line: "yes, yes, no: end of month, yes". A question that depends on another open question in the same round waits for the next round.
+4. **Loop** until the frontier is empty: recompute, ask the next round. Small change: 1 round. Normal build: 2-4 rounds. Stop when nothing is left silently assumed.
+5. **No-permission doctrine still holds.** Rounds are batched (never one question per message), every question has a default, and "your call" means take the recommendation. In **Company-Builder mode** the orchestrator answers its own frontier and logs each answer in the decisions log with `Decided by: orchestrator`. The founder sees the log, never the questions.
+6. **Ungrillable decisions** (look, feel, layout, "will this flow make sense"): no amount of questions settles them. Build a throwaway prototype instead: 2-3 deliberately different options, handed to a fresh agent, one command to run, no tests, no polish, marked THROWAWAY. The founder (or the orchestrator) picks; the pick goes back into the grill as a settled decision. The prototype never becomes the product.
+
+### S2. Glossary (one name per thing)
+
+Write `GLOSSARY.md` while grilling, not after. One row per project word:
+
+```
+| Term | Meaning | Avoid |
+|---|---|---|
+| Pause | Deliveries and charges stop until a set date, then restart on their own. | hold, freeze |
+```
+
+- Challenge fuzzy words as they come up ("you said cancel, the code says pause: which one?").
+- From here on every artifact, ticket, commit and test name uses the glossary words. The gate refuses a `SPEC.md` that still uses a word the glossary says to avoid.
+- **Plain-English rule (`wait-what`).** Any time the founder says "wait, what?" (or anything like it), re-pitch the last message: short sentences, a little context, glossary words only.
+
+### S3. Write SPEC.md
+
+The spec is the grill's decisions written down, not a new interview. Required shape (the gate checks each part):
+
+```
+# SPEC: <name>
+Grill rounds: <n>
+Open decisions: 0
+
+## Problem
+Whose pain, in their words (from Stage 1), 10+ words.
+
+## Decisions
+| # | Decision | Answer | Decided by |
+|---|---|---|---|
+| 1 | Longest pause | 3 months | founder |
+| 2 | Billing date after resume | shifts by the pause length | fact: billing.py next_charge() |
+
+## User stories
+1. As a <who>, I <do what> so <why>.
+(a long numbered list; every behavior the build must have)
+
+## Seams
+- Where the tests poke in. Use the highest seam possible; the ideal is one per feature
+  (e.g. a pure `pause(sub, until, today)` function). Agree the seams before writing tests.
+
+## Out of scope
+- At least one thing this build will NOT do.
+
+## Slices
+| Slice | What it does (DB to button) | Stories | Seam | Est. tokens | Blocked by |
+|---|---|---|---|---|---|
+| S1 | pause column + pause() + pause button | 1, 3 | pause() | 90K | none |
+| S2 | resume early | 2 | pause() | 60K | S1 |
+```
+
+- **Decided by** is `founder`, `orchestrator` (Company-Builder) or `fact: <source>`. Never blank.
+- **Slices are vertical**: each cuts every layer (data, logic, screen, test) and can be demoed alone. **Size each to one fresh session**: estimate its tokens; anything over 150K is split (total tokens divided by about 150K is the slice count). `Blocked by` names other slices or `none`; loops are refused.
+- **The slices seed GSD.** In Stage 2 they become the ROADMAP phases (or `/gsd-quick` tasks in speed-run), in `Blocked by` order. The user stories feed REQUIREMENTS.md; the seams feed each PLAN.md's test tasks.
+
+### S4. Spec review (the gate)
+
+The author never reviews its own spec. Spawn **fresh-context reviewer agents** (not the session that wrote SPEC.md; a different model is better), in parallel. Each gets SPEC.md, GLOSSARY.md and the Stage 1 artifacts, and nothing else:
+
+| Reviewer | Lens | Asks |
+|---|---|---|
+| A, the packed bag | completeness and edge cases | What decision is missing? What contradicts what? Which story has no seam? What happens on the unhappy path (expired card, empty list, two devices)? |
+| B, Reggie | scope and over-build | What here was never asked for? What is gold-plating? Which slice could be cut and nobody would notice? |
+| C, the founder reader | plain words | Could a non-coder founder read every decision and know what they agreed to? Which words need the glossary? |
+
+Speed-run needs 2 (A and B); full and Company-Builder need all 3. More is fine (rule 12).
+
+Every finding gets a **ruling**, same pattern as the Stage 1 red-team swarm: `fixed` (say what changed in SPEC.md) or `dismissed` (say why, with evidence). A review that finds nothing is suspect: re-run it harsher or on a different model. Write `SPEC-REVIEW.md`:
+
+```
+# SPEC REVIEW: <name>
+Author: <agent or session id that wrote SPEC.md>
+
+## Reviewers
+| Reviewer | Lens | Agent id |
+|---|---|---|
+| A | completeness | a1b2c3d4 |
+| B | Reggie: scope | e5f6a7b8 |
+
+## Findings
+| # | Reviewer | Finding | Ruling | Why / fix |
+|---|---|---|---|---|
+| 1 | A | Card expires during a pause? | fixed | added decision 7: retry the charge on resume |
+| 2 | B | Pause-reason survey is over-build | dismissed | not in the spec; B misread story 4 |
+```
+
+The gate refuses: fewer reviewers than the mode needs, a reviewer whose agent id is the author's, the same agent twice, zero findings, any finding without a ruling or a reason.
+
+### S5. Gate and hand-off
+
+```
+python3 scripts/forge_spec.py . --mode <mode>   # READY or the list of holes
+forge-state gate S pass --note "<n> decisions, <n> stories, <n> slices; <n> findings ruled"
+```
+
+`gate S n/a` is refused (every software build has decisions). Skipping is the founder's call: `forge-state gate S waived --note "<their words>"`. Runs begun before Stage S existed are not affected; opt one in with `forge-state migrate --spec`. Report the boundary (rule 14) with the Reggie line (F11), then go to Stage 2.
 
 ## Stage 2 — BUILD (GSD is the build engine)
 
@@ -252,7 +375,14 @@ non-coder founder stays in command of a build.
 
 **BUILD THE FEATURES THEY DIDN'T ASK FOR (the "features you didn't know you needed" mechanism).** After GSD requirements are drafted, run an explicit **gap-feature pass**: re-read the Stage 1 CEP segments and top objections and list what the segments NEED but the founder did NOT request (e.g., a privacy tool → "your data never leaves your computer" as a real feature; Deadreckon → auto pace-count, hazard warnings, SOS-copy). Feed the survivors into GSD requirements. This is where the claimed magic actually happens — make it a real step, not a vibe.
 
-- Exit gate: GSD verification passes AND the app runs end-to-end on the core task AND user-facing copy has cleared the copy-validation gate.
+**BUILD FROM THE SPEC (added 2026-10-15, with Stage S; adapted from Matt Pocock's `to-tickets`, `tdd`, `code-review` and `pr` skills).** Stage S hands Stage 2 a reviewed `SPEC.md`. Use it:
+- **Slices become the roadmap.** Each `## Slices` row is one GSD phase (full) or one `/gsd-quick --validate` task (speed-run), built in `Blocked by` order. User stories go into REQUIREMENTS.md; glossary words name everything.
+- **Test first, at the seams.** Each slice's PLAN.md writes the tests at the seams SPEC.md agreed, before the code: one test, then the code that passes it, then the next. No tests at seams nobody agreed; a test that recomputes its expected value the way the code does is not a test.
+- **One slice per fresh session.** A slice is sized to fit one session (about 150K tokens). Clear between slices; the next slice starts from SPEC.md, `.planning/` and the commits, not from a long chat.
+- **Two fresh reviewers after every execute, never the author.** (1) **Spec conformance**: a fresh agent gets SPEC.md, GLOSSARY.md and the slice's diff and reports what is missing, what was built that nobody asked for, and what looks done but is wrong, quoting the user story each time. (2) **Code standards**: `gsd-code-reviewer` (or a fresh agent) on the same diff for bugs and code smells (Fowler's list: mysterious names, duplicated code, feature envy, long parameter lists, shotgun surgery, speculative generality). Keep the two reports separate; a slice can pass one and fail the other. Every finding is fixed or dismissed with a reason, logged in FORGE-STATE.md. The agent that wrote the code never reviews it.
+- **Merge danger on every ship.** Every PR, merge or commit-to-ship summary (and every deploy report) carries one line: `Merge danger: one-way|two-way door, blast radius: <area>`. One-way means hard to undo (a schema migration, deleted data, a sent email, a public URL, a price); two-way means a revert fixes it. A one-way door gets named in the report the founder reads, before it ships.
+
+- Exit gate: GSD verification passes AND the app runs end-to-end on the core task AND user-facing copy has cleared the copy-validation gate AND every slice had both fresh reviews with every finding ruled.
 
 ## Stage 2B — BRAND SYSTEM (for market/company builds)
 
@@ -292,6 +422,8 @@ Synthetic users can't feel glare, gloves, or GPS drift. You use the app on the r
   - **Founder video** — script grounded in the real offer (Copy OS pipeline), rendered with the founder's avatar + a voice clone (an avatar + voice-clone tool; assets from config, never hardcode keys). This is where the founder's on-camera brand and content channel compound.
   - **Deliverable docs** — business plan (ICP, offer, pricing, unit economics, channels, moat, risks), market research, launch plan — packaged, not just the raw validation artifacts.
 - **STRANGER-TEST HTML RECAP — the packaging gate (all market/company builds).** A single `<project>/RECAP.html` that links everything: the business at a glance, both videos, a run-the-site link, the demo, the business plan, market research, brand guidelines, and the red-team verdict with fixes applied. **The gate: a stranger who opens only this page can understand the business, watch it, run it, and demo it** — nothing required outside the page. This is the definition-of-done for Company-Builder mode.
+- **Ship report carries the merge danger line** (Stage 2): `Merge danger: one-way|two-way door, blast radius: <area>`, one per thing that went live, in the recap and the report the founder reads.
+- **Retro (F17)** before the run closes: suggested changes, the founder picks, machine-spottable mistakes become checks.
 - **Write back (F15):** workspace registry state, the synth-survey learnings file for the product, the forge install's `LEARNINGS.md`, and the **CHANNEL line** in FORGE-STATE.md (the publishable artifact this run produced, with its path, or `none`). Then the **outcome step** (F15): `forge-state outcome` for `score` (the Stage 3 gate's number vs the field test or the real user), `ship` (the date in the build roadmap vs the day it went live), `field` (the punch list the plan expected vs the one Stage 4 wrote), and `reggie` (every open call, ruling appended to his ledger); the `score` line `--append`ed to the product's learnings file. A run that doesn't write back is a wasted run.
 
 ## Speed-run vs full mode summary
@@ -303,6 +435,7 @@ Synthetic users can't feel glare, gloves, or GPS drift. You use the app on the r
 | H Hunt+Tournament | Skip (idea in hand) | Skip unless hunting | **Required** (find the idea) |
 | 0 Kill criteria | Required (it's one paragraph) | Required | Pre-set in the master prompt |
 | 1 Validate | May compress to panel + survey if the CEP signal is obvious; verdict still honest | All four artifacts + red-team swarm | All four + red-team swarm + gap map; DON'T BUILD still stops the run |
+| S Spec | 1-2 grill rounds, 2 reviewers (completeness + Reggie) | Grill to an empty frontier, 3 reviewers | Orchestrator answers its own frontier (logged), 3 reviewers |
 | 2 Build | gsd-quick --validate (+ security audit if it touches auth/secrets/money/network/root) | Full GSD phases + verification | Full GSD + verification |
 | 2B Brand | Skip | Name/domain/logo/type/guidelines | Required |
 | 3 Usability | 2 personas, gate 8/10 | Full panel, gate 9/10 | Full panel + red-team swarm |
