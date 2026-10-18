@@ -154,9 +154,14 @@ the artifact or declared dry with the queries tried:
 
 - A stage's exit criteria unmet = the next stage does not start. `forge-state gate`
   refuses to pass a later stage while an earlier blocking one is unresolved
-  (`--force` records an out-of-order pass as such). The founder can override any
-  gate explicitly: `forge-state gate <stage> waived --note "why"`; the reason is
-  the record.
+  Only the founder overrides a blocking gate, in their own words (3+):
+  `forge-state gate <stage> waived|n/a --note "why" --adam-said "<their words>"`,
+  and `--force` needs `--adam-said` too (forge 1.11: an audit found Stage 3 forced
+  or waived on three runs). A bare `--force` or a note-only waive is refused.
+- **Software and games: a pass is checked, not claimed** (forge 1.11). `forge-state
+  run` drives the stages and records each pass only when the stage's artifacts
+  verify; a hand-called `gate <stage> pass` runs the same check and is refused if
+  it fails (`references/mvp90-gates.md`).
 - **The manifest** (table above) is created at Stage 0 by `forge-state init` in the
   run directory, and it is the pipeline's resume-cold document: a run paused at any
   stage must be reconstructable from this file alone. **The YAML frontmatter at the
@@ -179,12 +184,14 @@ and BLOCKING, and nothing (not the skill, not the state file, not the session)
 noticed. It stopped because "gates block" was a sentence rather than a mechanism.
 
 ```
+forge-state run [--until G] [--dry-run]  # software/games: THE DRIVER; runs, verifies and records every stage, stops at a human gate
 forge-state next                         # the single next stage; exit 2 = a blocking gate is owed, 3 = a gate FAILED
-forge-state gate <stage> pass|fail|waived --note "…" [--next "…"]   # every transition records itself
+forge-state gate <stage> pass|fail|waived --note "…" [--next "…"] [--adam-said "…"]   # every transition records itself
 forge-state status                       # every gate, what blocks, how long owed
 forge-state init [--family …]            # once, at Stage 0, in the run directory
 forge-state verdict "…" [--close]        # the verdict; --close ends the run
 forge-state scan                         # session-start hook; names runs idle a day+ with a gate owed; silent when clean
+forge-state stalls                       # read-only: software/games runs in WORKSPACE.md projects idle 14+ days, finish-or-kill each
 forge-state park "why"                   # this run stops nagging: scan never prints it (unpark, or any recorded gate, brings it back)
 forge-state focus [--off]                # pin this run to the top of the capped scan list: one of the 3 actually in flight
 forge-state scan --park-overflow         # park every stalled run past the cap, in one move

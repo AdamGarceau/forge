@@ -42,6 +42,26 @@ Subscribers going on holiday cancel outright because they cannot skip deliveries
 ## Out of scope
 - Pausing gift subscriptions.
 
+## Core jobs
+- J1: pause a subscription for a holiday
+- J2: resume early
+
+Domain content: no
+
+## Assumed features
+| Feature | In/Out | Reason | Decided by |
+|---|---|---|---|
+| Undo a pause | in | a mis-tap must be reversible | founder |
+| Confirmation message | in | people need to know it worked | founder |
+| Error message on bad date | in | a past date must say why | founder |
+| Empty state with no subscription | in | new accounts see a blank page otherwise | founder |
+| Save state across reloads | in | a pause must survive closing the tab | founder |
+| Email receipt of the pause | in | subscribers expect a paper trail | founder |
+| Show the resume date | in | the first question every pauser asks | founder |
+| Pause from the mobile site | in | most subscribers manage on phones | founder |
+| Pause several subscriptions at once | out | rare, one account rarely has two | founder: "one at a time is fine" |
+| Pause reason survey | out | not the job, adds friction | Adam: "skip the survey for now" |
+
 ## Slices
 | Slice | What it does (DB to button) | Stories | Seam | Est. tokens | Blocked by |
 |---|---|---|---|---|---|
@@ -181,9 +201,9 @@ class Gate(unittest.TestCase):
         r = fst(self.d, "init", "--family", family, "--mode", mode)
         self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
         for k in ("G", "H"):
-            fst(self.d, "gate", k, "n/a", "--note", "idea in hand")
+            fst(self.d, "gate", k, "n/a", "--note", "idea in hand")    # non-blocking: no Adam words needed
         for k in ("0", "0A", "1") if family == "software" else ("0", "1", "T", "P"):
-            r = fst(self.d, "gate", k, "pass", "--note", "test")
+            r = fst(self.d, "gate", k, "pass", "--note", "test", "--adam-said", "test fixture, not under test")
             self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
 
     def gates(self):
@@ -216,7 +236,9 @@ class Gate(unittest.TestCase):
         self.init()
         self.assertNotEqual(fst(self.d, "gate", "S", "n/a", "--note", "x").returncode, 0)
         self.assertNotEqual(fst(self.d, "gate", "S", "waived").returncode, 0)
-        self.assertEqual(fst(self.d, "gate", "S", "waived", "--note", "founder: skip it, one-line script").returncode, 0)
+        self.assertNotEqual(fst(self.d, "gate", "S", "waived", "--note", "founder: skip it").returncode, 0)  # 1.11
+        self.assertEqual(fst(self.d, "gate", "S", "waived", "--note", "one-line script",
+                             "--adam-said", "skip it, one-line script").returncode, 0)
 
     def test_next_names_the_spec(self):
         self.init()
@@ -240,7 +262,8 @@ class Gate(unittest.TestCase):
         self.assertNotIn('"S":', text)
         with open(p, "w", encoding="utf-8") as fh:
             fh.write(text)
-        r = fst(self.d, "gate", "2", "pass", "--note", "built")    # S does not block an old run
+        r = fst(self.d, "gate", "2", "pass", "--note", "built",    # S does not block an old run
+                "--adam-said", "test fixture, build not under test")
         self.assertEqual(r.returncode, 0, r.stderr)
         r = fst(self.d, "migrate", "--spec")
         self.assertEqual(r.returncode, 0, r.stderr)

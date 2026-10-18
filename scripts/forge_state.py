@@ -27,6 +27,11 @@ This does the same thing GSD does, for every Forge family:
                          unparks it automatically, because work happened.
     forge-state focus    pin a run to the top of the capped scan list: this is one of the 3
                          things actually in flight.
+    forge-state run      THE DRIVER (software, games; forge_driver.py): reconcile, then run each
+                         owed stage as a fresh worker, verify its artifacts, record the gate, stop
+                         only at a real human gate with one exact ask. --dry-run, --until <gate>.
+    forge-state stalls   runs in ~/WORKSPACE.md projects untouched 14+ days, finish-or-kill each
+    forge-state handoff  record the first hand-off; `human --fix|--feature` after it is the 90% score
 
 THE WIP CAP (2026-09-13)
 ------------------------
@@ -558,6 +563,10 @@ def cmd_human(root, st, body, path, args):
     if not args.said.strip():
         sys.exit("--said is the record: the verbatim, or the path to it. Empty is not a touchpoint.")
     entry = {"who": args.who, "when": args.when or today(), "how": args.how, "said": args.said}
+    if getattr(args, "kind", None):
+        entry["kind"] = args.kind               # fix | feature: the 90% score after hand-off
+    if getattr(args, "passes", False):
+        entry["passes"] = True                  # these words clear the human gate at this stage
     if args.stage:
         entry["stage"] = args.stage
     else:
@@ -603,6 +612,10 @@ def cmd_status(root, st, body, path, args):
         print(line)
     for line in outcome_lines(st):
         print(line)
+    if f["name"] in SPEC_FAMILIES:
+        import forge_driver
+        for line in forge_driver.handoff_lines(st) + forge_driver.ask_lines(st):
+            print(line)
     o, fl = owed(st), failed(st)
     print("\n%d blocking gate%s outstanding%s." % (
         len(o), "" if len(o) == 1 else "s", ", %d FAILED" % len(fl) if fl else ""))
@@ -650,6 +663,11 @@ def cmd_next(root, st, body, path, args):
     return 0
 
 
+def adam_words(s):
+    """Words in an --adam-said override; 3+ means the founder actually said something."""
+    return len(re.findall(r"[^\W_]+", s or ""))
+
+
 def cmd_gate(root, st, body, path, args):
     f = family(st)
     k = args.stage
@@ -658,6 +676,16 @@ def cmd_gate(root, st, body, path, args):
                  % (k, f["cmd"], ", ".join(f["order"])))
     if args.state == "waived" and not args.note:
         sys.exit("a waived gate is an override; record why: --note \"…\"")
+    adam = (getattr(args, "adam_said", "") or "").strip()
+    if f["blocking"][k] and adam_words(adam) < 3 and not (k in ("2H", "S") and args.state == "n/a"):
+        # forge 1.11 (90% MVP, Adam 2026-10-18): the audit found Stage 3 forced or waived on
+        # sugar-pills-ops, macclean and peers. A blocking gate is skipped only in Adam's words.
+        if args.force:
+            sys.exit("refused: a bare --force no longer passes a blocking gate. Out of order is Adam's call: "
+                     "add --adam-said \"<his words, 3+>\"")
+        if args.state in ("waived", "n/a"):
+            sys.exit("refused: Stage %s is blocking; %s is Adam's call alone. Record his words: "
+                     "forge-state gate %s %s --note \"…\" --adam-said \"<what he said>\"" % (k, args.state, k, args.state))
     if args.state in RESOLVED and not args.force:
         earlier = [e for e in f["order"][:f["order"].index(k)]
                    if f["blocking"][e] and st["gates"].get(e, {}).get("state", "pending") not in RESOLVED]
@@ -669,8 +697,20 @@ def cmd_gate(root, st, body, path, args):
                         "is" if len(earlier) == 1 else "are", "it" if len(earlier) == 1 else "them"))
     if f["name"] in SPEC_FAMILIES and k == "S":
         spec_gate(root, st, f, args)
+    if f["name"] in SPEC_FAMILIES and args.state == "pass" and adam_words(adam) < 3:
+        # forge 1.11 (A2): a hand-called pass is refused unless the stage's artifacts verify right
+        # now (forge_driver.stage_errors). `forge-state run` records passes the same way.
+        import forge_driver
+        errs = forge_driver.stage_errors(root, st, k, body)
+        if errs:
+            sys.exit("refused: Stage %s does not verify on disk (forge_driver.stage_errors):\n  - " % k
+                     + "\n  - ".join(errs)
+                     + "\nProduce the artifacts (forge-state run does this), or the founder overrides: "
+                       "--adam-said \"<their words>\"")
     prev = st["gates"][k].get("state")
     note = args.note or ""
+    if adam:
+        note = '[ADAM OVERRIDE] "%s"%s' % (adam, " — " + note if note else "")
     if args.force and args.state in RESOLVED:
         note = "[out of order] " + note
     st["gates"][k] = {"state": args.state, "since": today(), "note": note}
@@ -764,6 +804,18 @@ def cmd_focus(root, st, body, path, args):
     save(root, st, body, path, touch=False)
     print("FOCUS %s — pinned to the WIP %d; scan prints it first." % (st["project"], WIP_CAP))
     print("Keep the count at %d. `forge-state scan --all` shows who else claims a slot." % WIP_CAP)
+    return 0
+
+
+def cmd_handoff(root, st, body, path, args):
+    """The first time Adam (or the ICP) gets the build for its real job. Later `human --fix`
+    entries count fix rounds against it: 0-1 small rounds is the 90% bar."""
+    if st.get("handoff"):
+        print("hand-off already recorded: %s" % st["handoff"].get("date"))
+        return 0
+    st["handoff"] = {"date": args.date or today(), "stage": derive_stage(st)}
+    save(root, st, body, path)
+    print("hand-off recorded: %s. Tag every later ask: forge-state human Adam --fix|--feature ..." % st["handoff"]["date"])
     return 0
 
 
@@ -1002,6 +1054,9 @@ def main():
     g.add_argument("state", choices=STATES)
     g.add_argument("--note", default="")
     g.add_argument("--next", default="", help="set the project's next action in the same write")
+    g.add_argument("--adam-said", dest="adam_said", default="",
+                   help="the only override on a blocking gate: the founder's words, verbatim (3+), for waived / "
+                        "n/a / --force / a pass whose artifacts don't verify")
     g.add_argument("--force", action="store_true", help="allow an out-of-order pass (recorded as such)")
     h = sub.add_parser("human", help="record the named real-human touchpoint (F5); a run can have several")
     h.add_argument("who", help="the person, by name or role (the client, a viewer)")
@@ -1009,6 +1064,22 @@ def main():
     h.add_argument("--how", required=True, help="the channel: in person, phone, text, email, recording")
     h.add_argument("--said", required=True, help="the verbatim, or the path to it")
     h.add_argument("--stage", default="", help="which stage the read belongs to (default: current)")
+    hk = h.add_mutually_exclusive_group()
+    hk.add_argument("--fix", dest="kind", action="store_const", const="fix",
+                    help="after hand-off: something broken or missing that the ICP needs (counts against 90%%)")
+    hk.add_argument("--feature", dest="kind", action="store_const", const="feature",
+                    help="after hand-off: an addition or refinement (fine)")
+    h.add_argument("--passes", action="store_true",
+                   help="these words clear the human gate at --stage (a verdict, not a bug report or an ask)")
+    rn = sub.add_parser("run", help="THE DRIVER: reconcile, run each owed stage, verify, record; stop at a human gate")
+    rn.add_argument("--until", default=None, help="stop once this gate passes")
+    rn.add_argument("--dry-run", dest="dry_run", action="store_true", help="print the plan; change nothing")
+    rn.add_argument("--max-steps", dest="max_steps", type=int, default=40)
+    sl = sub.add_parser("stalls", help="read-only: runs in WORKSPACE.md projects untouched 14+ days, finish-or-kill")
+    sl.add_argument("--days", type=int, default=14)
+    sl.add_argument("--workspace", default=None, help="path to WORKSPACE.md (default ~/WORKSPACE.md)")
+    ho = sub.add_parser("handoff", help="record the first hand-off (the driver does this at Stage 4)")
+    ho.add_argument("--date", default="", help="YYYY-MM-DD (default: today)")
     oc = sub.add_parser("outcome", help="grade a prediction against its actual (F15); a run records several")
     oc.add_argument("what", help="what was predicted: score | ship | field | reggie (or any short label)")
     oc.add_argument("--predicted", required=True, help="the prediction, as written at the time")
@@ -1051,8 +1122,11 @@ def main():
 
     root = os.path.abspath(args.root)
     cmd = args.cmd or "status"
-    st, body, path = (None, "", None) if cmd in ("scan", "watchdog") else load(root)
+    st, body, path = (None, "", None) if cmd in ("scan", "watchdog", "stalls") else load(root)
 
+    if cmd == "stalls":
+        import forge_driver
+        return forge_driver.cmd_stalls(args)
     if cmd == "scan":
         return cmd_scan(root, None, None, None, args)
     if cmd == "watchdog":
@@ -1067,6 +1141,11 @@ def main():
                  "  track it: forge-state init --family %s"
                  % (root, " (prose-only %s found)" % os.path.basename(path) if path else "",
                     "|".join(sorted(FAMILIES))))
+    if cmd == "run":
+        import forge_driver
+        return forge_driver.cmd_run(root, st, body, path, args)
+    if cmd == "handoff":
+        return cmd_handoff(root, st, body, path, args)
     return {"status": cmd_status, "next": cmd_next, "gate": cmd_gate, "human": cmd_human,
             "outcome": cmd_outcome, "set-next": cmd_set_next, "verdict": cmd_verdict,
             "park": cmd_park, "unpark": cmd_unpark, "migrate": cmd_migrate,

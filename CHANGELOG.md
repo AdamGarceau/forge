@@ -2,6 +2,19 @@
 
 All notable changes to Forge. Format follows [Keep a Changelog](https://keepachangelog.com); versioning is [SemVer](https://semver.org). Run `/forge-update` to pull the latest.
 
+## [1.11.0] — 2026-10-18
+
+The 90% MVP. One build pass, and at first hand-off the ICP does every core job for its real job, with 0-1 small fix rounds. An audit of 35 runs measured about 60%: controls that did nothing, apps fine in the simulator and broken on the phone, features the founder took for granted, wrong domain content, the wrong delivery mode, gates forced past, and a state file that only moved when a model remembered to move it.
+
+### Added
+- **`forge-state run`, the driver** (`scripts/forge_driver.py`). The command is the step, the way GSD's execute-phase is: reconcile owed gates whose artifacts verify, run each owed stage as a fresh worker with its section of the skill, verify, record the gate, fix up to 2 rounds, then BLOCK. Stops only at a human gate with one exact ask (what, on what device, what counts as pass), recorded in `asks:`. `--dry-run`, `--until <gate>`.
+- **Nine gates that check artifacts** (`scripts/forge_mvp.py`, `forge_spec.check_mvp90`; formats in `references/mvp90-gates.md`): real-target proof newer than the build; a dead-control sweep; the Stage S "what do you assume it does" round with core jobs and a domain-content line; domain truth with a sourced ledger and a 10-item spot check; delivery mode at Stage 1; an ICP one-shot walkthrough of every core job; a hand-off score (`forge-state handoff`, `human --fix|--feature`); `forge-state stalls` (read-only finish-or-kill list); judged files need a cloud or Claude judge that quotes its evidence.
+- Stage 2 also needs every ROADMAP phase done.
+
+### Changed
+- A hand-called `gate <stage> pass` on a software or games run is refused unless the stage verifies, or the founder's words come with it (`--adam-said`, 3+ words).
+- `waived`, `n/a` or `--force` on a blocking gate needs `--adam-said`. A human gate clears only on `human --passes`.
+
 ## [1.10.0] — 2026-10-15
 
 Stage S: Forge writes a spec before it builds, and fresh reviewers attack the spec before any code. Until now Reggie reviewed the idea (Stage 1) and the plan-checker reviewed the GSD plan (Stage 2), but nothing reviewed what was about to be built.

@@ -266,6 +266,52 @@ def check_review(root, need):
     return errs
 
 
+ASSUMED_MIN, ASSUMED_MAX = 10, 15
+
+
+def check_mvp90(text, mode="full"):
+    """forge 1.11 (90% MVP): core jobs, the domain-content line, and the "what do you assume it does" round.
+
+    The audit found 6 runs missing a feature Adam took for granted (multi-select, a page counter).
+    So before the build, list the 10-15 things a normal user of this kind of product expects and
+    rule each in or out. An expected feature left out needs Adam's own words; nobody else can drop it.
+    """
+    errs = []
+    jobs = re.findall(r"^\s*[-*\d.)\s]*\**(J\d+)\b", section(text, "Core jobs"), re.M)
+    if not jobs:
+        errs.append("## Core jobs lists none: the 1-7 jobs the ICP must finish on first hand-off (- J1: ...)")
+    elif len(jobs) > 7:
+        errs.append("## Core jobs lists %d; core means the few the ICP can't live without (7 max)" % len(jobs))
+    dom = field(text, "Domain content").lower()
+    if not (dom.startswith("yes") or dom.startswith("no")):
+        errs.append("`Domain content: yes|no` is missing: does the product hold rules, prices, game data or "
+                    "legal/tax text? yes means every item gets a source and a spot check (DOMAIN-TRUTH.md)")
+    head, rows = table(section(text, "Assumed features"))
+    f, io, why, by = col(head, "feature"), col(head, "in"), col(head, "reason", "why"), col(head, "decided by", "who")
+    if not (f and io and why and by):
+        return errs + ["## Assumed features needs a table: Feature | In/Out | Reason | Decided by "
+                       "(the %d-%d things a normal user of this kind of product expects)" % (ASSUMED_MIN, ASSUMED_MAX)]
+    if len(rows) < ASSUMED_MIN:
+        errs.append("## Assumed features lists %d; list %d-%d (multi-select, undo, page counter, save state, "
+                    "error messages, empty states...)" % (len(rows), ASSUMED_MIN, ASSUMED_MAX))
+    for i, r in enumerate(rows, 1):
+        v = r[io].strip("` *").lower()
+        if v not in ("in", "out"):
+            errs.append("## Assumed features row %d (%s): In/Out must be in or out" % (i, r[f][:40]))
+            continue
+        if words(r[why]) < 3:
+            errs.append("## Assumed features row %d (%s) has no reason" % (i, r[f][:40]))
+        if v == "out":
+            who = r[by]
+            ok = re.match(r"\s*(adam|founder)\b", who, re.I) and re.search(r"[\"\u201c].*\w+\W+\w+\W+\w+.*[\"\u201d]", who)
+            if mode == "autonomous" and re.match(r"\s*orchestrator", who, re.I):
+                ok = True
+            if not ok:
+                errs.append("## Assumed features row %d (%s) is out without Adam's words: a feature a normal user "
+                            "expects is cut only by Adam (Decided by: Adam \"<3+ words>\")" % (i, r[f][:40]))
+    return errs
+
+
 def spec_check(root, mode="full", family="software"):
     """List of problems with the Stage S artifacts under root (empty list = gate S may pass)."""
     if family == "games":
@@ -276,7 +322,7 @@ def spec_check(root, mode="full", family="software"):
         return ["unknown mode %r: Stage S runs as speed-run, full or autonomous" % (mode,)]
     errs, text = check_spec(root)
     if text is not None:
-        errs += check_glossary(root, text)
+        errs += check_glossary(root, text) + check_mvp90(text, mode)
     return errs + check_review(root, need)
 
 

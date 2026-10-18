@@ -18,9 +18,11 @@ description: >
 
 # /forge — Idea to Field-Tested App
 
-> **The claim:** One-shot software, even if you can't code. Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
+> **The claim:** One-shot software at a 90% MVP, even if you can't code. One build pass, and at first hand-off the ICP (the run's target user, not the founder) does every core job for its real job, with 0-1 small fix rounds; what comes after is new or refined features, not repairs. 100% isn't the bar; 90% is, and `forge-state status` scores it (fix rounds since hand-off). Every Forge family makes the same shape of promise: one shot, gated, honest, resumable cold; the founder supplies judgment at the gates and nothing else.
 
-> **Version 1.10.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
+> **`/forge` on a run with FORGE-STATE.md = `forge-state run`.** The driver reconciles, runs each owed stage as a fresh worker, verifies the artifacts, records the gate, and stops only at a human gate with one exact ask. Never do stage work freehand or call `gate … pass` yourself; a hand pass that doesn't verify is refused. Driver, the nine 90% gates and their file formats: `references/mvp90-gates.md`.
+
+> **Version 1.11.0** · see `CHANGELOG.md` for what's new · run `/forge-update` to pull the latest.
 
 > **Inherits `FAMILY-RULES.md`** (this directory; F0 to F17): the rules every Forge family shares. A rule below whose body lives there keeps its number and title and points at its F-number, because the stages cite the numbers.
 
